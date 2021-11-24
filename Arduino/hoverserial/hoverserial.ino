@@ -28,7 +28,7 @@
 #define START_FRAME         0xABCD     	// [-] Start frme definition for reliable serial communication
 #define TIME_SEND           100         // [ms] Sending time interval
 #define SPEED_MAX_TEST      300         // [-] Maximum speed for testing
-// #define DEBUG_RX                        // [-] Debug received data. Prints all bytes to serial (comment-out to disable)
+#define DEBUG_RX                        // [-] Debug received data. Prints all bytes to serial (comment-out to disable)
 
 #include <SoftwareSerial.h>
 SoftwareSerial HoverSerial(2,3);        // RX, TX
