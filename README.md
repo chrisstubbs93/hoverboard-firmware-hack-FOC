@@ -1,3 +1,17 @@
+# roamerFW
+Hoverboard firmware for EMF roamer
+Forked from the brilliant work at [hoverboard-firmware-hack-FOC](https://github.com/EFeru/hoverboard-firmware-hack-FOC)
+Python script based on [this](https://github.com/EFeru/hoverboard-firmware-hack-FOC/issues/157)
+
+# Build instructions
+Use linux (ubuntu) subsystem for windows
+```
+cd /mnt/c/Users/Chris/Documents/GitHub/hoverboard-firmware-hack-FOC
+make
+```
+flash .bin with ST-LINK
+
+
 # hoverboard-firmware-hack-FOC
 [![Build Status](https://travis-ci.com/EmanuelFeru/hoverboard-firmware-hack-FOC.svg?branch=master)](https://travis-ci.com/EmanuelFeru/hoverboard-firmware-hack-FOC)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
