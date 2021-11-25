@@ -1,4 +1,3 @@
-!build/hover.hex
 .pio/
 .pioenvs/
 .vscode/
@@ -7,4 +6,6 @@ MDK-ARM/Listing/
 MDK-ARM/Objects/
 MDK-ARM/RTE/
 MDK-ARM/*.uvguix.*
-build/
+build/*
+!build/hover.hex
+!build/hover.bin
