@@ -64,36 +64,8 @@ void setup() {
 void loop() {
   Timer = millis(); // timing events!
   PingIt(); // Manage ping data
-  //if (SerialEvent) SendSerialData();
   RadarOut2(DegSpread);
-  delay(500);
-}
-
-void RadarOut( int Degrees) {
-  static int x = 0;
-  static bool xz = true;
-  static byte Sensor = 0;
-  int deg = Degrees / SensorCount;
-  Sensor = 0;
-  while (Sensor < SensorCount) {
-//    if (Degrees > 0) {
-//      Serial.print((Sensor * deg) );
-//      if (Degrees != SensorCount) {
-//        Serial.print("*");
-//      }
-//      Serial.print("=");
-//
-//    } else {
-//      Serial.print("Pin#");
-//      Serial.print(PinList[Sensor]);
-//      Serial.print("=");
-//    }
-
-    Serial.print(Measurements[Sensor]);
-    if (Sensor < SensorCount - 1) Serial.print(",");
-    Sensor++;
-  }
-  Serial.println("");
+  delay(600);
 }
 
 void RadarOut2(int Degrees) {
@@ -102,15 +74,19 @@ void RadarOut2(int Degrees) {
   static byte Sensor = 0;
   int deg = Degrees / SensorCount;
   Sensor = 0;
+  Serial.print("SONAR{");
   while (Sensor < SensorCount) {
     if (Degrees > 0) {
       Serial.print((Sensor * deg) );
-      Serial.print(",");
+      Serial.print(":");
       Serial.print((int)Measurements[Sensor]);
-      Serial.println("");
+      if (Sensor < SensorCount-1){
+        Serial.print(",");
+      }
       Sensor++;
     }
   }
+  Serial.println("}");
 }
 
 void PingTrigger(int Pin) {
@@ -139,17 +115,11 @@ void PingIt() {
         //Serial.println("T");
         byte Sensor = 0; //????????
         
-                
           if ((PinArray[i] != -1) ) {
-            //Serial.println("Current sensor: " + (String)i + " SampleCt: " + (String)SampleCt + " SamplesToAverage: " + (String)SamplesToAverage);
-            //Serial.println("PingTimeX: " + (String)PingTimeX[i]);
             if (PingSamplesX[i] > 0) {
-              //Serial.println("PingSamplesX: " + (String)PingSamplesX[i]);
-              //Serial.println("PingTimeX: " + (String)PingTimeX[i]);
               PingTime[i] =  (unsigned long) (PingTimeX[i] / PingSamplesX[i]); // average
               byte Sensor = findPin(i);
               Measurements[Sensor] = (float) (microsecondsToCentimeters(PingTime[i]));
-             // Serial.println("Sensor " + (String)Sensor + ": " + (String)Measurements[Sensor]);
             }
             PingTimeX[i] = 0;
             PingSamplesX[i] = 0;
@@ -171,31 +141,10 @@ void PingIt() {
   }
 }
 
-float microsecondsToInches(long microseconds)
-{
-  return (float) microseconds / 74 / 2;
-}
-
 float microsecondsToCentimeters(long microseconds)
 {
   return (float)microseconds / 29 / 2;
 }
-
-
-void SendSerialData()
-{
-  SerialEvent = false;
-  int val = Serial.read() - '0';
-  while (Serial.available())Serial.read();
-  if (val == 0) {
-    DataMessage();
-    Serial.write(dataB, 30); // respond with message
-  } else  if (val == 1) {
-    RadarOut( DegSpread);
-    Serial.println();
-  }
-}
-
 
 uint8_t DataMessage() {
   int x = 0;
@@ -272,23 +221,7 @@ void pciSetup(byte pin)
   //Serial.println("done Setting flag pin:" + (String)pin);
   PinList[SensorCount] = pin;
   SensorCount++;
-  
-//  Serial.print("PinArray:");
-//  for (int i = 0; i < 20; i++){
-//    Serial.print(PinArray[i]);
-//    Serial.print(", ");
-//  }
-//  Serial.println();
-//  
-//  Serial.print("PinList:");
-//  for (int i = 0; i < 20; i++){
-//    Serial.print(PinList[i]);
-//    Serial.print(", ");
-//  }
-//  Serial.println();
-  
-  
-}
+  }
 
 void serialEvent() {
   SerialEvent = true;
