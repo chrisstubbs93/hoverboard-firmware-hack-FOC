@@ -34,8 +34,8 @@ long interval = 50;        // time constant for timers
 void setup() {
   pinMode(2, INPUT);
   pinMode(A0, INPUT);
-  pinMode(5, OUTPUT);
-  pinMode(6, OUTPUT);
+  pinMode(5, OUTPUT); //HBRIDGE IN1
+  pinMode(6, OUTPUT); //HBRIDGE IN2
   Serial.begin(115200);
   PID1.SetMode(AUTOMATIC);              // PID Setup - trousers SERVO
   PID1.SetOutputLimits(-255, 255);
