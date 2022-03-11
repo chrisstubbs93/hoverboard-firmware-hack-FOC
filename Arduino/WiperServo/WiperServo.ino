@@ -6,29 +6,50 @@
 
 #include <PID_v1.h>  //PID loop from http://playground.arduino.cc/Code/PIDLibrary
 
-double Pk1 = 7;  //speed it gets there
-double Ik1 = 0;
-double Dk1 = 0;
+#define SteeringWheelPin A0
+#define SteeringFeedbackPin A1
+#define LeftPedalPin A2
+#define RightPedalPin A3
+#define DividerPin A4
+#define CurrentSensePin A5
+
+#define BrakeSwPin 13
+#define LocRemSwPin 5
+#define DriveSwPin 6
+#define RevSwPin 7
+#define EstopPin 8
+#define MotorEnPin 11
+#define LPWMpin 10
+#define RPWMpin 9
+#define AUX1pin 3 //FET 12V OP only
+#define AUX2pin 2 //FET 12V OP only
+#define AUX3pin 4 //input only with 10k pulldown
+
+
 int deadband = 1;
 int centreoffset = 25;
 int poslimit = 150; //150 is somewhat arbritrary number that represents 90 degrees each way
 float izerooffset = 343.0; //adc counts at 0 amps
 float ical = 56.0;//adc counts per 1amp
-int ilim = 30; //in 0.1A
+double ilim = 18; //in 0.1A
 unsigned long CC_iterations = 0; //number of iterations in constant current mode
 int lockout_time = 10; // time in constant current before tripping to lockout mode
 bool lockout = false;
 
+
+// PID for posn control
+double Pk1 = 7;  //speed it gets there
+double Ik1 = 0;
+double Dk1 = 0;
+double Setpoint1, Input1, Output1;
+PID PID1(&Input1, &Output1, &Setpoint1, Pk1, Ik1 , Dk1, DIRECT);    
+
+// PID current limit
 double Pk2 = 0;  //I lim
 double Ik2 = 15;
 double Dk2 = 0;
-
-double Setpoint1, Input1, Output1, Output1a;    // PID variables
-double Setpoint2, Input2, Output2;    // PID variables
-
-PID PID1(&Input1, &Output1, &Setpoint1, Pk1, Ik1 , Dk1, DIRECT);    // PID for posn control
-
-PID PID2(&Input2, &Output2, &Setpoint2, Pk2, Ik2 , Dk2, DIRECT);    // PID current limit
+double Input2, Output2;
+PID PID2(&Input2, &Output2, &ilim, Pk2, Ik2 , Dk2, DIRECT);    
 
 double pwm;
 volatile boolean done;
@@ -46,14 +67,27 @@ long previousMillis = 0;    // set up timers
 long interval = 50;        // time constant for timers
 
 void setup() {
-  pinMode(2, INPUT);
-  pinMode(A0, INPUT); //pot
-  pinMode(A1, INPUT);//L_IS
-  pinMode(A2, INPUT);//R_IS
-  pinMode(9, OUTPUT); //HBRIDGE IN1
-  pinMode(10, OUTPUT); //HBRIDGE IN2
-  setPwmFrequency(9, 1); //62500hz
-  setPwmFrequency(10, 1); //62500hz
+  pinMode(BrakeSwPin, INPUT);
+  pinMode(LocRemSwPin, INPUT);
+  pinMode(DriveSwPin, INPUT);
+  pinMode(RevSwPin, INPUT);
+  pinMode(EstopPin, OUTPUT);
+  pinMode(MotorEnPin, OUTPUT);
+  pinMode(LPWMpin, OUTPUT);
+  pinMode(RPWMpin, OUTPUT);
+  pinMode(AUX1pin, OUTPUT);
+  pinMode(AUX2pin, OUTPUT);
+  pinMode(AUX3pin, INPUT);
+
+  pinMode(SteeringWheelPin, INPUT);
+  pinMode(SteeringFeedbackPin, INPUT);
+  pinMode(LeftPedalPin, INPUT);
+  pinMode(RightPedalPin, INPUT);
+  pinMode(DividerPin, INPUT);
+  pinMode(CurrentSensePin, INPUT);
+  
+  setPwmFrequency(LPWMpin, 1); //62500hz?
+  setPwmFrequency(RPWMpin, 1); //62500hz?
   Serial.begin(115200);
   PID1.SetMode(AUTOMATIC);              // PID posn control loop
   PID1.SetOutputLimits(-255, 255);
@@ -62,12 +96,13 @@ void setup() {
   PID2.SetMode(AUTOMATIC);              // PID constant current loop
   PID2.SetOutputLimits(-255, 255);
   PID2.SetSampleTime(20);
+  
+  digitalWrite(MotorEnPin,HIGH);
 }
 
 void wiperServo(int sp) {
   Setpoint1 = constrain(map(sp, -100, 100, 0-poslimit, poslimit), 0-poslimit, poslimit);
-  Setpoint2 = ilim; //current limit in 0.1A
-  pot = analogRead(A0) + centreoffset;
+  pot = analogRead(SteeringFeedbackPin) + centreoffset;
   Serial.print(" pos_sp:");
   Serial.print (Setpoint1);
   Serial.print(" pos_ip:");
@@ -76,7 +111,7 @@ void wiperServo(int sp) {
   PID1.Compute();
   Serial.print(" pos_op:");
   Serial.print(Output1);
-  I_reading = analogRead(A1);
+  I_reading = analogRead(CurrentSensePin);
   Serial.print("I_raw:");
   Serial.print(I_reading);
   Input2 = (I_reading-izerooffset)*10/ical; //current feedback in 0.1A
@@ -86,8 +121,16 @@ void wiperServo(int sp) {
   Serial.print(" I_op:");
   Serial.print(Output2);
   
+  if(digitalRead(DriveSwPin)) {
+    Serial.print(" D ");
+  } else if (digitalRead(RevSwPin)) {
+    Serial.print(" R ");
+  } else{
+    Serial.print(" N ");
+  }
+  
   //take minimum loop output
-  if (abs(Output1) < abs(Output2)) {
+  if (abs(Output1) <= abs(Output2)) {
     //position mode
     pwm = Output1;
     Serial.println(" pos mode");
@@ -105,24 +148,30 @@ void wiperServo(int sp) {
   if (CC_iterations > (1000*lockout_time)/interval) {lockout = true;} //latch into lockout mode
   if (lockout) {
     pwm = 0;
+    digitalWrite(EstopPin,HIGH);
     Serial.println("LOCKOUT");
   }
 
   if (pwm > 0) {
-    analogWrite(9, pwm);
-    analogWrite(10, 0);
+    analogWrite(RPWMpin, pwm);
+    analogWrite(LPWMpin, 0);
   } else {
-    analogWrite(9, 0);
-    analogWrite(10, abs(pwm));
+    analogWrite(RPWMpin, 0);
+    analogWrite(LPWMpin, abs(pwm));
   }
 }
 
 void loop() {
+  if(digitalRead(LocRemSwPin)){ //remote mode
   while (Serial.available() > 0) {
     int posraw = Serial.parseInt();
     if (Serial.read() == '\n') {
-      pos = constrain(posraw, -225, 225); //should this be -100-100????
+      pos = constrain(posraw, -100, 100);
     }
+  }
+  } else { //local mode
+    pos = constrain(map(analogRead(SteeringWheelPin), 0, 1024, -100, 100), -100, 100);
+
   }
   wiperServo(pos);              // tell servo to go to position in variable 'pos'
   delay(interval);
