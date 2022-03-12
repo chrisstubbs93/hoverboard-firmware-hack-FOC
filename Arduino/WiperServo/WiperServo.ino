@@ -12,8 +12,8 @@
 #define RightPedalPin A3
 #define DividerPin A4
 #define CurrentSensePin A5
+#define BrakeHallPin A6
 
-#define BrakeSwPin 13
 #define LocRemSwPin 5
 #define DriveSwPin 6
 #define RevSwPin 7
@@ -67,7 +67,6 @@ long previousMillis = 0;    // set up timers
 long interval = 50;        // time constant for timers
 
 void setup() {
-  pinMode(BrakeSwPin, INPUT);
   pinMode(LocRemSwPin, INPUT);
   pinMode(DriveSwPin, INPUT);
   pinMode(RevSwPin, INPUT);
@@ -85,6 +84,7 @@ void setup() {
   pinMode(RightPedalPin, INPUT);
   pinMode(DividerPin, INPUT);
   pinMode(CurrentSensePin, INPUT);
+  pinMode(BrakeHallPin, INPUT);  
   
   setPwmFrequency(LPWMpin, 1); //62500hz?
   setPwmFrequency(RPWMpin, 1); //62500hz?
@@ -174,6 +174,9 @@ void loop() {
 
   }
   wiperServo(pos);              // tell servo to go to position in variable 'pos'
+  if(analogRead(BrakeHallPin)>200){
+    Serial.println("Brake On");
+  }
   delay(interval);
 }
 
