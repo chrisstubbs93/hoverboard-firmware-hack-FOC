@@ -9,7 +9,7 @@
 #define SteeringWheelPin A0
 #define SteeringFeedbackPin A1
 #define LeftPedalPin A2
-#define RightPedalPin A3
+#define RightPedalPin A3 //redundant?
 #define DividerPin A4
 #define CurrentSensePin A5
 #define BrakeHallPin A6
@@ -25,13 +25,34 @@
 #define AUX2pin 2 //FET 12V OP only
 #define AUX3pin 4 //input only with 10k pulldown
 
+#define HOVER_SERIAL_BAUD   115200      // [-] Baud rate for HoverSerial (used to communicate with the hoverboard)
+#define START_FRAME         0xABCD     	// [-] Start frme definition for reliable serial communication
+
+#include <SoftwareSerial.h>
+SoftwareSerial HoverSerial(2,4);        // RX, TX
+
+// Global variables for hoverboard
+uint8_t idx = 0;                        // Index for new data pointer
+uint16_t bufStartFrame;                 // Buffer Start Frame
+byte *p;                                // Pointer declaration for the new received data
+byte incomingByte;
+byte incomingBytePrev;
+typedef struct{
+   uint16_t start;
+   int16_t  steer;
+   int16_t  speed;
+   uint16_t checksum;
+} SerialCommand;
+SerialCommand Command;
+
+
 
 int deadband = 1;
 int centreoffset = 25;
 int poslimit = 150; //150 is somewhat arbritrary number that represents 90 degrees each way
 float izerooffset = 343.0; //adc counts at 0 amps
 float ical = 56.0;//adc counts per 1amp
-double ilim = 18; //in 0.1A
+double ilim = 30; //in 0.1A
 unsigned long CC_iterations = 0; //number of iterations in constant current mode
 int lockout_time = 10; // time in constant current before tripping to lockout mode
 bool lockout = false;
@@ -76,7 +97,7 @@ void setup() {
   pinMode(RPWMpin, OUTPUT);
   pinMode(AUX1pin, OUTPUT);
   pinMode(AUX2pin, OUTPUT);
-  pinMode(AUX3pin, INPUT);
+  //pinMode(AUX3pin, INPUT); //used for sw serial
 
   pinMode(SteeringWheelPin, INPUT);
   pinMode(SteeringFeedbackPin, INPUT);
@@ -88,7 +109,9 @@ void setup() {
   
   setPwmFrequency(LPWMpin, 1); //62500hz?
   setPwmFrequency(RPWMpin, 1); //62500hz?
-  Serial.begin(115200);
+  Serial.begin(115200); //hardware serial to pi
+  HoverSerial.begin(HOVER_SERIAL_BAUD); //software serial to hoverboard
+  
   PID1.SetMode(AUTOMATIC);              // PID posn control loop
   PID1.SetOutputLimits(-255, 255);
   PID1.SetSampleTime(20);
@@ -98,6 +121,18 @@ void setup() {
   PID2.SetSampleTime(20);
   
   digitalWrite(MotorEnPin,HIGH);
+}
+
+void Send(int16_t uSteer, int16_t uSpeed)
+{
+  // Create command
+  Command.start    = (uint16_t)START_FRAME;
+  Command.steer    = (int16_t)uSteer;
+  Command.speed    = (int16_t)uSpeed;
+  Command.checksum = (uint16_t)(Command.start ^ Command.steer ^ Command.speed);
+
+  // Write to Serial
+  HoverSerial.write((uint8_t *) &Command, sizeof(Command)); 
 }
 
 void wiperServo(int sp) {
@@ -176,6 +211,11 @@ void loop() {
   wiperServo(pos);              // tell servo to go to position in variable 'pos'
   if(analogRead(BrakeHallPin)>200){
     Serial.println("Brake On");
+  } else { //if brake is not on, run the hoverboard
+  //TODO: and check if in local mode
+    Serial.print("Pedal: ");
+    Serial.println((analogRead(LeftPedalPin)-550)*2);
+    Send(0, (analogRead(LeftPedalPin)-550)*2);
   }
   delay(interval);
 }
