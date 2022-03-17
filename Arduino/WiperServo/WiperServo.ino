@@ -52,7 +52,7 @@ int centreoffset = 25;
 int poslimit = 150; //150 is somewhat arbritrary number that represents 90 degrees each way
 float izerooffset = 343.0; //adc counts at 0 amps
 float ical = 56.0;//adc counts per 1amp
-double ilim = 30; //in 0.1A
+double ilim = 50; //in 0.1A
 unsigned long CC_iterations = 0; //number of iterations in constant current mode
 int lockout_time = 10; // time in constant current before tripping to lockout mode
 bool lockout = false;
@@ -81,6 +81,9 @@ int sp;
 int pos = 0;
 int posraw = 0;
 int I_reading = 0;
+
+int pedalval = 0;
+int pedaldeadband = 100;
 
 unsigned long currentMillis;
 
@@ -209,13 +212,28 @@ void loop() {
 
   }
   wiperServo(pos);              // tell servo to go to position in variable 'pos'
+  pedalval = analogRead(LeftPedalPin)-550;
+  Serial.print("Pedal: ");
+  Serial.println(pedalval);
   if(analogRead(BrakeHallPin)>200){
     Serial.println("Brake On");
+    Send(0, 0);
   } else { //if brake is not on, run the hoverboard
   //TODO: and check if in local mode
-    Serial.print("Pedal: ");
-    Serial.println((analogRead(LeftPedalPin)-550)*2);
-    Send(0, (analogRead(LeftPedalPin)-550)*2);
+  //check drive/rev
+    if(pedalval>pedaldeadband){
+      Send(0, map(pedalval,pedaldeadband,500,0,600)*(-1));
+      Serial.print("sent: ");
+      Serial.println(map(pedalval,pedaldeadband,500,0,600)*(-1));
+    } else if (pedalval<(pedaldeadband*(-1))) {
+      Send(0, map(pedalval,pedaldeadband,500,0,100)*(-1));
+      Serial.print("sent: ");
+      Serial.println(map(pedalval,pedaldeadband,500,0,100)*(-1));
+    }
+    else{
+            Send(0, 0);
+
+    }
   }
   delay(interval);
 }
