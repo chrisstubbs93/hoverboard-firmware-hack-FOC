@@ -221,18 +221,22 @@ void loop() {
   } else { //if brake is not on, run the hoverboard
   //TODO: and check if in local mode
   //check drive/rev
-    if(pedalval>pedaldeadband){
-      Send(0, map(pedalval,pedaldeadband,500,0,600)*(-1));
-      Serial.print("sent: ");
-      Serial.println(map(pedalval,pedaldeadband,500,0,600)*(-1));
-    } else if (pedalval<(pedaldeadband*(-1))) {
-      Send(0, map(pedalval,pedaldeadband,500,0,100)*(-1));
-      Serial.print("sent: ");
-      Serial.println(map(pedalval,pedaldeadband,500,0,100)*(-1));
+    if(pedalval>pedaldeadband){ //accel
+      if(digitalRead(DriveSwPin)){
+        Send(0, map(pedalval,pedaldeadband,500,0,600));
+        Serial.print("sent: ");
+        Serial.println(map(pedalval,pedaldeadband,500,0,600));
+      } else if (digitalRead(RevSwPin)){
+        //send it inverted atm becasue the hoverboard is backwards
+        Send(0, map(pedalval,pedaldeadband,500,0,100)*(-1));
+        Serial.print("sent: ");
+        Serial.println(map(pedalval,pedaldeadband,500,0,100)*(-1));
+      }
+    } else if (pedalval<(0-pedaldeadband)) { //brake
+      //probably need to imprement brakes
     }
     else{
             Send(0, 0);
-
     }
   }
   delay(interval);
