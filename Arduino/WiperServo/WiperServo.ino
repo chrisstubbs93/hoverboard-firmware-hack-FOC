@@ -49,6 +49,7 @@ unsigned long previousMillisA = 0;
 int deadband = 1;
 int SteerCentreOffset = 25;
 int PedalCentre = 550;
+float revspd = 0.1;
 int poslimit = 150; //150 is somewhat arbritrary number that represents 90 degrees each way
 float izerooffset = 343.0; //adc counts at 0 amps
 float ical = 56.0;//adc counts per 1amp
@@ -85,7 +86,7 @@ int posraw = 0;
 int I_reading = 0;
 
 int pedalval = 0;
-int pedaldeadband = 100;
+int pedaldeadband = 50;
 
 unsigned long currentMillis;
 
@@ -244,15 +245,17 @@ void loop() {
       //TODO: and check if in local mode
       //check drive/rev
       if (AccelPedalVal.get()-PedalCentre > pedaldeadband) { //accel
+        int drvcmd = map(AccelPedalVal.get()-PedalCentre, pedaldeadband, (1023-PedalCentre), 0, 1000);
+        //hoverbaord firmware input range is -1000 to 1000
         if (digitalRead(DriveSwPin)) {
-          Send(0, map(AccelPedalVal.get()-PedalCentre, pedaldeadband, 500, 0, 600));
+          Send(0, drvcmd);
           //Serial.print("sent: ");
-          //Serial.println(map(AccelPedalVal.get()-PedalCentre,pedaldeadband,500,0,600));
+          //Serial.println(drvcmd);
         } else if (digitalRead(RevSwPin)) {
-          //send it inverted atm becasue the hoverboard is backwards
-          Send(0, map(AccelPedalVal.get()-PedalCentre, pedaldeadband, 500, 0, 100) * (-1));
+          //send it inverted and scaled down for reverse
+          Send(0, int(drvcmd*revspd*(-1)));
           //Serial.print("sent: ");
-          //Serial.println(map(AccelPedalVal.get()-PedalCentre,pedaldeadband,500,0,100)*(-1));
+          //Serial.println(int(drvcmd*revspd*(-1)));
         }
       } else if (AccelPedalVal.get()-PedalCentre < (0 - pedaldeadband)) { //brake
         //probably need to imprement brakes
