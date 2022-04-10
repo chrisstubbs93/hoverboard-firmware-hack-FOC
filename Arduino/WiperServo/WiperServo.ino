@@ -47,13 +47,13 @@ SerialCommand Command;
 
 unsigned long previousMillisA = 0;
 int deadband = 1;
-int SteerCentreOffset = 25;
+int SteerCentreOffset = 0;
 int PedalCentre = 550;
 float revspd = 0.3;
 int poslimit = 150; //150 is somewhat arbritrary number that represents 90 degrees each way
-float izerooffset = 343.0; //adc counts at 0 amps
-float ical = 56.0;//adc counts per 1amp
-double ilim = 50; //in 0.1A
+float izerooffset = 350.0; //adc counts at 0 amps
+float ical = 30.0;//adc counts per 1amp
+double ilim = 80; //in 0.1A
 unsigned long CC_iterations = 0; //number of iterations in constant current mode
 int lockout_time = 10; // time in constant current before tripping to lockout mode
 bool lockout = false;
@@ -236,32 +236,36 @@ void loop() {
     Serial.print(" Pedal_raw:");
     Serial.print(AccelPedalVal.getLast());
     Serial.print(" Pedal_avg:");
-    Serial.println(AccelPedalVal.get()-PedalCentre);
+    Serial.println(AccelPedalVal.get() - PedalCentre);
 
     if (analogRead(BrakeHallPin) > 200) {
       Serial.println("Brake On");
       Send(0, 0);
-    } else { //if brake is not on, run the hoverboard
+    } else { //brake is not on
       //TODO: and check if in local mode
-      //check drive/rev
-      if (AccelPedalVal.get()-PedalCentre > pedaldeadband) { //accel
-        int drvcmd = map(AccelPedalVal.get()-PedalCentre, pedaldeadband, (1023-PedalCentre), 0, 1000);
-        //hoverbaord firmware input range is -1000 to 1000
-        if (digitalRead(DriveSwPin)) {
-          Send(0, drvcmd);
-          //Serial.print("sent: ");
-          //Serial.println(drvcmd);
-        } else if (digitalRead(RevSwPin)) {
-          //send it inverted and scaled down for reverse
-          Send(0, int(drvcmd*revspd*(-1)));
-          //Serial.print("sent: ");
-          //Serial.println(int(drvcmd*revspd*(-1)));
-        }
-      } else if (AccelPedalVal.get()-PedalCentre < (0 - pedaldeadband)) { //brake
-        //probably need to imprement brakes
+      if (lockout) {
+        Send(0, 0); //stop if steering fault
       }
-      else {
-        Send(0, 0);
+      else { //no steering faults
+        if (AccelPedalVal.get() - PedalCentre > pedaldeadband) {
+          int drvcmd = map(AccelPedalVal.get() - PedalCentre, pedaldeadband, (1023 - PedalCentre), 0, 1000);
+          //hoverbaord firmware input range is -1000 to 1000
+          if (digitalRead(DriveSwPin)) {
+            Send(0, drvcmd);
+            //Serial.print("sent: ");
+            //Serial.println(drvcmd);
+          } else if (digitalRead(RevSwPin)) {
+            //send it inverted and scaled down for reverse
+            Send(0, int(drvcmd * revspd * (-1)));
+            //Serial.print("sent: ");
+            //Serial.println(int(drvcmd*revspd*(-1)));
+          }
+        } else if (AccelPedalVal.get() - PedalCentre < (0 - pedaldeadband)) { //brake
+          //probably need to imprement brakes
+        }
+        else {
+          Send(0, 0);
+        }
       }
     }
   }
