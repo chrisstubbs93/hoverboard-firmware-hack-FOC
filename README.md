@@ -12,6 +12,24 @@ make
 flash .bin with ST-LINK
 
 
+# General roamer notes:
+Input range ovser serial is -1000 to 1000
+Set up front hoverboard with 
+```
+#define I_MOT_MAX       10
+#define I_DC_MAX        12
+```
+Set up rear hoverboard with 
+```
+#define I_MOT_MAX       18
+#define I_DC_MAX        20
+```
+
+```
+#define INVERT_R_DIRECTION and #define INVERT_L_DIRECTION because I put all the motors on backwards lol
+```
+
+
 # hoverboard-firmware-hack-FOC
 [![Build Status](https://travis-ci.com/EmanuelFeru/hoverboard-firmware-hack-FOC.svg?branch=master)](https://travis-ci.com/EmanuelFeru/hoverboard-firmware-hack-FOC)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
