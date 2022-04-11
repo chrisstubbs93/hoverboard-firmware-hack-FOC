@@ -48,7 +48,7 @@ extern ExtY rtY_Right;                  /* External outputs */
 
 static int16_t pwm_margin;              /* This margin allows to have a window in the PWM signal for proper FOC Phase currents measurement */
 
-extern uint8_t ctrlModReq;
+extern uint8_t dynamicDrivingMode;
 static int16_t curDC_max = (I_DC_MAX * A2BIT_CONV);
 int16_t curL_phaA = 0, curL_phaB = 0, curL_DC = 0;
 int16_t curR_phaB = 0, curR_phaC = 0, curR_DC = 0;
@@ -177,7 +177,7 @@ void DMA1_Channel1_IRQHandler(void) {
 
     /* Set motor inputs here */
     rtU_Left.b_motEna     = enableFin;
-    rtU_Left.z_ctrlModReq = ctrlModReq;  
+    rtU_Left.z_ctrlModReq = dynamicDrivingMode;  
     rtU_Left.r_inpTgt     = pwml;
     rtU_Left.b_hallA      = hall_ul;
     rtU_Left.b_hallB      = hall_vl;
@@ -215,7 +215,7 @@ void DMA1_Channel1_IRQHandler(void) {
 
     /* Set motor inputs here */
     rtU_Right.b_motEna      = enableFin;
-    rtU_Right.z_ctrlModReq  = ctrlModReq;
+    rtU_Right.z_ctrlModReq  = dynamicDrivingMode;
     rtU_Right.r_inpTgt      = pwmr;
     rtU_Right.b_hallA       = hall_ur;
     rtU_Right.b_hallB       = hall_vr;

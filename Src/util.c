@@ -58,6 +58,8 @@ extern volatile uint32_t timeoutCntGen; // global counter for general timeout co
 extern volatile uint8_t  timeoutFlgGen; // global flag for general timeout counter
 extern volatile uint32_t main_loop_counter;
 
+uint8_t dynamicDrivingMode = CTRL_MOD_REQ; // initialise a new global (externally settable) var to set the driving mode. Sets it to CTRL_MOD_REQ to be used an a default
+
 #if defined(CONTROL_PPM_LEFT) || defined(CONTROL_PPM_RIGHT)
 extern volatile uint16_t ppm_captured_value[PPM_NUM_CHANNELS+1];
 #endif
@@ -104,17 +106,11 @@ int16_t  speedAvgAbs;                   // average measured speed in absolute
 uint8_t  timeoutFlgADC    = 0;          // Timeout Flag for ADC Protection:    0 = OK, 1 = Problem detected (line disconnected or wrong ADC data)
 uint8_t  timeoutFlgSerial = 0;          // Timeout Flag for Rx Serial command: 0 = OK, 1 = Problem detected (line disconnected or wrong Rx data)
 
-uint8_t  ctrlModReqRaw = CTRL_MOD_REQ;
-uint8_t  ctrlModReq    = CTRL_MOD_REQ;  // Final control mode request 
+// uint8_t  ctrlModReqRaw = dynamicDrivingMode;
+// uint8_t  ctrlModReq    = dynamicDrivingMode;  // Final control mode request 
 
 #if defined(DEBUG_I2C_LCD) || defined(SUPPORT_LCD)
 LCD_PCF8574_HandleTypeDef lcd;
-#endif
-
-#if defined(CONTROL_NUNCHUK) || defined(SUPPORT_NUNCHUK)
-uint8_t nunchuk_connected = 1;
-#else
-uint8_t nunchuk_connected = 0;
 #endif
 
 #ifdef VARIANT_TRANSPOTTER
@@ -201,7 +197,7 @@ static uint8_t button2;                 // Green
 static uint8_t brakePressed;
 #endif
 
-#if defined(CRUISE_CONTROL_SUPPORT) || (defined(STANDSTILL_HOLD_ENABLE) && (CTRL_TYP_SEL == FOC_CTRL) && (CTRL_MOD_REQ != SPD_MODE))
+#if defined(CRUISE_CONTROL_SUPPORT) || (defined(STANDSTILL_HOLD_ENABLE) && (CTRL_TYP_SEL == FOC_CTRL))
 static uint8_t cruiseCtrlAcv = 0;
 static uint8_t standstillAcv = 0;
 #endif
@@ -236,6 +232,13 @@ static uint8_t standstillAcv = 0;
 /* =========================== Initialization Functions =========================== */
 
 void BLDC_Init(void) {
+  #if defined(CRUISE_CONTROL_SUPPORT) || (defined(STANDSTILL_HOLD_ENABLE) && (CTRL_TYP_SEL == FOC_CTRL))
+  if(dynamicDrivingMode != SPD_MODE)
+  {
+    static uint8_t cruiseCtrlAcv = 0;
+    static uint8_t standstillAcv = 0;
+  }
+  #endif
   /* Set BLDC controller parameters */ 
   rtP_Left.b_angleMeasEna       = 0;            // Motor angle input: 0 = estimated angle, 1 = measured angle (e.g. if encoder is available)
   rtP_Left.z_selPhaCurMeasABC   = 0;            // Left motor measured current phases {Green, Blue} = {iA, iB} -> do NOT change
@@ -286,11 +289,6 @@ void Input_Init(void) {
 
  #if defined(CONTROL_PWM_LEFT) || defined(CONTROL_PWM_RIGHT)
     PWM_Init();
-  #endif
-
-  #ifdef CONTROL_NUNCHUK
-    I2C_Init();
-    Nunchuk_Init();
   #endif
 
   #if defined(DEBUG_SERIAL_USART2) || defined(CONTROL_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2)
@@ -641,7 +639,9 @@ void updateCurSpdLim(void) {
  * Output: standstillAcv
  */
 void standstillHold(void) {
-  #if defined(STANDSTILL_HOLD_ENABLE) && (CTRL_TYP_SEL == FOC_CTRL) && (CTRL_MOD_REQ != SPD_MODE)
+  #if defined(STANDSTILL_HOLD_ENABLE) && (CTRL_TYP_SEL == FOC_CTRL)
+  if(dynamicDrivingMode != SPD_MODE)
+  {
     if (!rtP_Left.b_cruiseCtrlEna) {                                  // If Stanstill in NOT Active -> try Activation
       if (((input1[inIdx].cmd > 50 || input2[inIdx].cmd < -50) && speedAvgAbs < 30) // Check if Brake is pressed AND measured speed is small
           || (input2[inIdx].cmd < 20 && speedAvgAbs < 5)) {           // OR Throttle is small AND measured speed is very small
@@ -659,6 +659,7 @@ void standstillHold(void) {
         standstillAcv = 0;
       }
     }
+  }
   #endif
 }
 
@@ -671,7 +672,9 @@ void standstillHold(void) {
  * Output: input2.cmd (Throtle) with brake component included
  */
 void electricBrake(uint16_t speedBlend, uint8_t reverseDir) {
-  #if defined(ELECTRIC_BRAKE_ENABLE) && (CTRL_TYP_SEL == FOC_CTRL) && (CTRL_MOD_REQ == TRQ_MODE)
+  #if defined(ELECTRIC_BRAKE_ENABLE) && (CTRL_TYP_SEL == FOC_CTRL)
+  if(dynamicDrivingMode == TRQ_MODE) 
+  {
     int16_t brakeVal;
 
     // Make sure the Brake pedal is opposite to the direction of motion AND it goes to 0 as we reach standstill (to avoid Reverse driving) 
@@ -696,6 +699,7 @@ void electricBrake(uint16_t speedBlend, uint8_t reverseDir) {
     } else {  // when (input2.cmd < -ELECTRIC_BRAKE_THRES)
       input2[inIdx].cmd = MIN(brakeVal, ((input2[inIdx].cmd + ELECTRIC_BRAKE_THRES) * INPUT_MIN) / (INPUT_MIN + ELECTRIC_BRAKE_THRES));
     }
+  }
   #endif
 }
 
@@ -813,8 +817,7 @@ void readInputRaw(void) {
     #endif
 
     #if defined(CONTROL_NUNCHUK) || defined(SUPPORT_NUNCHUK)
-    if (nunchuk_connected) {
-      Nunchuk_Read();
+    if (Nunchuk_Read() == NUNCHUK_CONNECTED) {
       if (inIdx == CONTROL_NUNCHUK) {
         input1[inIdx].raw = (nunchuk_data[0] - 127) * 8; // X axis 0-255
         input2[inIdx].raw = (nunchuk_data[1] - 128) * 8; // Y axis 0-255
@@ -837,6 +840,14 @@ void readInputRaw(void) {
       #else
         input1[inIdx].raw = commandL.steer;
         input2[inIdx].raw = commandL.speed;
+        if(dynamicDrivingMode != commandL.driveMode)
+        {
+          if(commandL.driveMode == 0 || commandL.driveMode == 1 || commandL.driveMode == 2 || commandL.driveMode == 3)
+          {
+            dynamicDrivingMode = commandL.driveMode;
+            beepShortMany(8, 1);
+          }
+        }
       #endif
     }
     #endif
@@ -1003,12 +1014,10 @@ void handleTimeout(void) {
 
     // In case of timeout bring the system to a Safe State
     if (timeoutFlgADC || timeoutFlgSerial || timeoutFlgGen) {
-      ctrlModReq  = OPEN_MODE;                                          // Request OPEN_MODE. This will bring the motor power to 0 in a controlled way
+      dynamicDrivingMode  = OPEN_MODE;                                          // Request OPEN_MODE. This will bring the motor power to 0 in a controlled way
       input1[inIdx].cmd  = 0;
       input2[inIdx].cmd  = 0;
-    } else {
-      ctrlModReq  = ctrlModReqRaw;                                      // Follow the Mode request
-    }
+    } 
 
     // Beep in case of Input index change
     if (inIdx && !inIdx_prev) {                                         // rising edge
@@ -1246,7 +1255,7 @@ void usart_process_command(SerialCommand *command_in, SerialCommand *command_out
   #else
   uint16_t checksum;
   if (command_in->start == SERIAL_START_FRAME) {
-    checksum = (uint16_t)(command_in->start ^ command_in->steer ^ command_in->speed);
+    checksum = (uint16_t)(command_in->start ^ command_in->steer ^ command_in->speed ^ command_in->brake ^ command_in->driveMode);
     if (command_in->checksum == checksum) {
       *command_out = *command_in;
       if (usart_idx == 2) {             // Sideboard USART2
@@ -1409,15 +1418,15 @@ void sideboardSensors(uint8_t sensors) {
       switch (sensor1_index) {
         case 0:     // FOC VOLTAGE
           rtP_Left.z_ctrlTypSel = rtP_Right.z_ctrlTypSel = FOC_CTRL;
-          ctrlModReqRaw         = VLT_MODE;
+          dynamicDrivingMode         = VLT_MODE;
           break;
         case 1:     // FOC SPEED
           rtP_Left.z_ctrlTypSel = rtP_Right.z_ctrlTypSel = FOC_CTRL;
-          ctrlModReqRaw         = SPD_MODE;
+          dynamicDrivingMode         = SPD_MODE;
           break;
         case 2:     // FOC TORQUE
           rtP_Left.z_ctrlTypSel = rtP_Right.z_ctrlTypSel = FOC_CTRL;
-          ctrlModReqRaw         = TRQ_MODE;
+          dynamicDrivingMode         = TRQ_MODE;
           break;
         case 3:     // SINUSOIDAL
           rtP_Left.z_ctrlTypSel = rtP_Right.z_ctrlTypSel = SIN_CTRL;

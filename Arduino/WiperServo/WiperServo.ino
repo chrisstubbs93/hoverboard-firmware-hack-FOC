@@ -26,7 +26,7 @@
 #define AUX3pin 4 //input only with 10k pulldown
 
 #define HOVER_SERIAL_BAUD   115200      // [-] Baud rate for HoverSerial (used to communicate with the hoverboard)
-#define START_FRAME         0xABCD     	// [-] Start frme definition for reliable serial communication
+#define START_FRAME         0xABCD       // [-] Start frme definition for reliable serial communication
 
 #include <SoftwareSerial.h>
 SoftwareSerial HoverSerial(2, 4);       // RX, TX
@@ -41,6 +41,8 @@ typedef struct {
   uint16_t start;
   int16_t  steer;
   int16_t  speed;
+  int16_t  brake;
+  int16_t  driveMode;
   uint16_t checksum;
 } SerialCommand;
 SerialCommand Command;
@@ -93,6 +95,11 @@ unsigned long currentMillis;
 long previousMillis = 0;    // set up timers
 long interval = 50;        // time constant for timers
 
+#define SPD_MODE        2               // [-] SPEED mode
+#define TRQ_MODE        3               // [-] TORQUE mode
+
+int16_t currentDriveMode = SPD_MODE;
+
 void setup() {
   pinMode(LocRemSwPin, INPUT);
   pinMode(DriveSwPin, INPUT);
@@ -133,13 +140,15 @@ void setup() {
   digitalWrite(MotorEnPin, HIGH);
 }
 
-void Send(int16_t uSteer, int16_t uSpeed)
+void Send(int16_t uSteer, int16_t uSpeed, int16_t brake, int16_t driveMode)
 {
   // Create command
   Command.start    = (uint16_t)START_FRAME;
   Command.steer    = (int16_t)uSteer;
   Command.speed    = (int16_t)uSpeed;
-  Command.checksum = (uint16_t)(Command.start ^ Command.steer ^ Command.speed);
+  Command.brake    = (int16_t)brake;
+  Command.driveMode = (int16_t)driveMode;
+  Command.checksum = (uint16_t)(Command.start ^ Command.steer ^ Command.speed ^ Command.brake ^ Command.driveMode);
 
   // Write to Serial
   HoverSerial.write((uint8_t *) &Command, sizeof(Command));
@@ -240,23 +249,26 @@ void loop() {
 
     if (analogRead(BrakeHallPin) > 200) {
       Serial.println("Brake On");
-      Send(0, 0);
+      Send(0, 0, 0, currentDriveMode);
     } else { //brake is not on
       //TODO: and check if in local mode
       if (lockout) {
-        Send(0, 0); //stop if steering fault
+        Send(0, 0, 0, currentDriveMode); //stop if steering fault
       }
       else { //no steering faults
         if (AccelPedalVal.get() - PedalCentre > pedaldeadband) {
           int drvcmd = map(AccelPedalVal.get() - PedalCentre, pedaldeadband, (1023 - PedalCentre), 0, 1000);
           //hoverbaord firmware input range is -1000 to 1000
           if (digitalRead(DriveSwPin)) {
-            Send(0, drvcmd);
+            Send(0, drvcmd, 0, SPD_MODE);
+            currentDriveMode = SPD_MODE;
             //Serial.print("sent: ");
             //Serial.println(drvcmd);
           } else if (digitalRead(RevSwPin)) {
             //send it inverted and scaled down for reverse
-            Send(0, int(drvcmd * revspd * (-1)));
+            //Send(0, int(drvcmd * revspd * (-1)));
+            Send(0, drvcmd, 0, TRQ_MODE);
+            currentDriveMode = TRQ_MODE;
             //Serial.print("sent: ");
             //Serial.println(int(drvcmd*revspd*(-1)));
           }
@@ -264,7 +276,7 @@ void loop() {
           //probably need to imprement brakes
         }
         else {
-          Send(0, 0);
+          Send(0, 0, 0, currentDriveMode);
         }
       }
     }
@@ -275,7 +287,6 @@ void loop() {
 
 /**
    Divides a given PWM pin frequency by a divisor.
-
    The resulting frequency is equal to the base frequency divided by
    the given divisor:
      - Base frequencies:
@@ -286,13 +297,11 @@ void loop() {
           256, and 1024.
         o The divisors available on pins 3 and 11 are: 1, 8, 32, 64,
           128, 256, and 1024.
-
    PWM frequencies are tied together in pairs of pins. If one in a
    pair is changed, the other is also changed to match:
      - Pins 5 and 6 are paired on timer0
      - Pins 9 and 10 are paired on timer1
      - Pins 3 and 11 are paired on timer2
-
    Note that this function will have side effects on anything else
    that uses timers:
      - Changes on pins 3, 5, 6, or 11 may cause the delay() and
@@ -300,7 +309,6 @@ void loop() {
        functions may also be affected.
      - Changes on pins 9 or 10 will cause the Servo library to function
        incorrectly.
-
    Thanks to macegr of the Arduino forums for his documentation of the
    PWM frequency divisors. His post can be viewed at:
      https://forum.arduino.cc/index.php?topic=16612#msg121031
