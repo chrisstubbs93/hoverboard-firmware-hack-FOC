@@ -324,7 +324,9 @@ void Input_Init(void) {
         EE_ReadVariable(VirtAddVarTab[ 8+8*i] , &readVal); input2[i].min = (int16_t)readVal;
         EE_ReadVariable(VirtAddVarTab[ 9+8*i] , &readVal); input2[i].mid = (int16_t)readVal;
         EE_ReadVariable(VirtAddVarTab[10+8*i] , &readVal); input2[i].max = (int16_t)readVal;
+        input3[i].typ = 1;
       }
+
     } else {
       for (uint8_t i=0; i<INPUTS_NR; i++) {
         if (input1[i].typDef == 3) {  // If Input type defined is 3 (auto), identify the input type based on the values from config.h
@@ -337,6 +339,7 @@ void Input_Init(void) {
         } else {
           input2[i].typ = input2[i].typDef;
         }
+        input3[i].typ = 1;
       }
     }
     HAL_FLASH_Lock();

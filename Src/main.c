@@ -250,9 +250,10 @@ int main(void) {
       }
       #endif
 
-      if(input3[inIdx].cmd > 0)
+      if(input3[inIdx].raw > 0)
       {
-        electricBrakePedal(speedBlend, MultipleTapBrake.b_multipleTap, input3[inIdx].cmd);
+        electricBrakePedal(speedBlend, MultipleTapBrake.b_multipleTap, input3[inIdx].raw);
+        beepShortMany(6,1);
       }
 
       #ifdef ELECTRIC_BRAKE_ENABLE
