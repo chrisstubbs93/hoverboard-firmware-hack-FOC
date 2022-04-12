@@ -273,7 +273,10 @@ void loop() {
             //Serial.println(int(drvcmd*revspd*(-1)));
           }
         } else if (AccelPedalVal.get() - PedalCentre < (0 - pedaldeadband)) { //brake
-          //probably need to imprement brakes
+          int brkcmd = map(PedalCentre - AccelPedalVal.get(), pedaldeadband, (1023 - PedalCentre), 0, 1000);
+          Send(0, 0, brkcmd, currentDriveMode);
+          Serial.print("sentbrake: ");
+          Serial.println(brkcmd);
         }
         else {
           Send(0, 0, 0, currentDriveMode);

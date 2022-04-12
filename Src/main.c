@@ -69,6 +69,7 @@ extern uint8_t     inIdx;               // input index used for dual-inputs
 extern uint8_t     inIdx_prev;
 extern InputStruct input1[];            // input structure
 extern InputStruct input2[];            // input structure
+extern InputStruct input3[];            // input structure
 
 extern int16_t speedAvg;                // Average measured speed
 extern int16_t speedAvgAbs;             // Average measured speed in absolute
@@ -248,6 +249,11 @@ int main(void) {
         }
       }
       #endif
+
+      if(input3[inIdx].cmd > 0)
+      {
+        electricBrakePedal(speedBlend, MultipleTapBrake.b_multipleTap, input3[inIdx].cmd);
+      }
 
       #ifdef ELECTRIC_BRAKE_ENABLE
         electricBrake(speedBlend, MultipleTapBrake.b_multipleTap);  // Apply Electric Brake. Only available and makes sense for TORQUE Mode

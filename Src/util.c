@@ -99,6 +99,7 @@ InputStruct input2[INPUTS_NR] = { {0, 0, 0, PRI_INPUT2}, {0, 0, 0, AUX_INPUT2} }
 #else
 InputStruct input1[INPUTS_NR] = { {0, 0, 0, PRI_INPUT1} };
 InputStruct input2[INPUTS_NR] = { {0, 0, 0, PRI_INPUT2} };
+InputStruct input3[INPUTS_NR] = { {0, 0, 0, PRI_INPUT3} };
 #endif
 
 int16_t  speedAvg;                      // average measured speed
@@ -704,6 +705,46 @@ void electricBrake(uint16_t speedBlend, uint8_t reverseDir) {
 }
 
  /*
+ * Electric Brake Function OVERLOAD
+ * In case of TORQUE mode, this function replaces the motor "freewheel" with a constant braking when the input torque request is 0.
+ * This is useful when a small amount of motor braking is desired instead of "freewheel".
+ * 
+ * Input: speedBlend = fixdt(0,16,15), reverseDir = {0, 1}, brakeAmount (0-500)
+ * Output: input2.cmd (Throtle) with brake component included
+ */
+void electricBrakePedal(uint16_t speedBlend, uint8_t reverseDir, uint8_t brakeAmount) {
+  #if (CTRL_TYP_SEL == FOC_CTRL)
+  if(dynamicDrivingMode == TRQ_MODE) 
+  {
+    int16_t brakeVal;
+
+    // Make sure the Brake pedal is opposite to the direction of motion AND it goes to 0 as we reach standstill (to avoid Reverse driving) 
+    if (speedAvg > 0) {
+      brakeVal = (int16_t)((-brakeAmount * speedBlend) >> 15);
+    } else {
+      brakeVal = (int16_t)(( brakeAmount * speedBlend) >> 15);
+    }
+
+    // Check if direction is reversed
+    if (reverseDir) {
+      brakeVal = -brakeVal;
+    }
+
+    // Calculate the new input2.cmd with brake component included
+    if (input2[inIdx].cmd >= 0 && input2[inIdx].cmd < ELECTRIC_BRAKE_THRES) {
+      input2[inIdx].cmd = MAX(brakeVal, ((ELECTRIC_BRAKE_THRES - input2[inIdx].cmd) * brakeVal) / ELECTRIC_BRAKE_THRES);
+    } else if (input2[inIdx].cmd >= -ELECTRIC_BRAKE_THRES && input2[inIdx].cmd < 0) {
+      input2[inIdx].cmd = MIN(brakeVal, ((ELECTRIC_BRAKE_THRES + input2[inIdx].cmd) * brakeVal) / ELECTRIC_BRAKE_THRES);
+    } else if (input2[inIdx].cmd >= ELECTRIC_BRAKE_THRES) {
+      input2[inIdx].cmd = MAX(brakeVal, ((input2[inIdx].cmd - ELECTRIC_BRAKE_THRES) * INPUT_MAX) / (INPUT_MAX - ELECTRIC_BRAKE_THRES));
+    } else {  // when (input2.cmd < -ELECTRIC_BRAKE_THRES)
+      input2[inIdx].cmd = MIN(brakeVal, ((input2[inIdx].cmd + ELECTRIC_BRAKE_THRES) * INPUT_MIN) / (INPUT_MIN + ELECTRIC_BRAKE_THRES));
+    }
+  }
+  #endif
+}
+
+ /*
  * Cruise Control Function
  * This function activates/deactivates cruise control.
  * 
@@ -840,6 +881,7 @@ void readInputRaw(void) {
       #else
         input1[inIdx].raw = commandL.steer;
         input2[inIdx].raw = commandL.speed;
+        input3[inIdx].raw = commandL.brake;
         if(dynamicDrivingMode != commandL.driveMode)
         {
           if(commandL.driveMode == 0 || commandL.driveMode == 1 || commandL.driveMode == 2 || commandL.driveMode == 3)
@@ -1037,6 +1079,7 @@ void readCommand(void) {
 
     #if !defined(VARIANT_HOVERBOARD) && !defined(VARIANT_TRANSPOTTER)
       calcInputCmd(&input1[inIdx], INPUT_MIN, INPUT_MAX);
+      calcInputCmd(&input3[inIdx], 0, 500);
       #if !defined(VARIANT_SKATEBOARD)
         calcInputCmd(&input2[inIdx], INPUT_MIN, INPUT_MAX);
       #else
