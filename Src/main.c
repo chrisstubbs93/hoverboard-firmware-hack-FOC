@@ -250,10 +250,13 @@ int main(void) {
       }
       #endif
 
-      if(input3[inIdx].raw > 0)
+      if(input3[inIdx].cmd > 0)
       {
-        //electricBrakePedal(speedBlend, MultipleTapBrake.b_multipleTap, input3[inIdx].raw);
-        beepShortMany(6,1);
+        if(input3[inIdx].cmd > 500)
+        {
+          beepShort(6);
+        }
+        //electricBrakePedal(speedBlend, MultipleTapBrake.b_multipleTap, input3[inIdx].raw);        
         if (speedAvg > 0) {                                       // Make sure the braking is opposite to the direction of motion
             input2[inIdx].cmd  = (int16_t)((-input3[inIdx].cmd * speedBlend) >> 15);
           } else {
