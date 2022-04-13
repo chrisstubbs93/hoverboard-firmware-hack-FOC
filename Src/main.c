@@ -252,8 +252,13 @@ int main(void) {
 
       if(input3[inIdx].raw > 0)
       {
-        electricBrakePedal(speedBlend, MultipleTapBrake.b_multipleTap, input3[inIdx].raw);
+        //electricBrakePedal(speedBlend, MultipleTapBrake.b_multipleTap, input3[inIdx].raw);
         beepShortMany(6,1);
+        if (speedAvg > 0) {                                       // Make sure the braking is opposite to the direction of motion
+            input2[inIdx].cmd  = (int16_t)((-input3[inIdx].cmd * speedBlend) >> 15);
+          } else {
+            input2[inIdx].cmd  = (int16_t)((input3[inIdx].cmd * speedBlend) >> 15);
+          }
       }
 
       #ifdef ELECTRIC_BRAKE_ENABLE
