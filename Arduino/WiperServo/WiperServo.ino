@@ -260,20 +260,20 @@ void loop() {
           int drvcmd = map(AccelPedalVal.get() - PedalCentre, pedaldeadband, (1023 - PedalCentre), 0, 1000);
           //hoverbaord firmware input range is -1000 to 1000
           if (digitalRead(DriveSwPin)) {
-            Send(0, drvcmd, 0, SPD_MODE);
-            currentDriveMode = SPD_MODE;
+            Send(0, drvcmd, 0, TRQ_MODE);
+            currentDriveMode = TRQ_MODE;
             //Serial.print("sent: ");
             //Serial.println(drvcmd);
           } else if (digitalRead(RevSwPin)) {
             //send it inverted and scaled down for reverse
             //Send(0, int(drvcmd * revspd * (-1)));
-            Send(0, drvcmd, 0, TRQ_MODE);
+            Send(0, -drvcmd, 0, TRQ_MODE);
             currentDriveMode = TRQ_MODE;
             //Serial.print("sent: ");
             //Serial.println(int(drvcmd*revspd*(-1)));
           }
         } else if (AccelPedalVal.get() - PedalCentre < (0 - pedaldeadband)) { //brake
-          int brkcmd = map(PedalCentre - AccelPedalVal.get(), pedaldeadband, (PedalCentre), 0, 500); //500 = full brake
+          int brkcmd = map(PedalCentre - AccelPedalVal.get(), pedaldeadband, (PedalCentre), 0, 1000); //500 = full brake
           Send(0, 0, brkcmd, currentDriveMode);
           Serial.print("sentbrake: ");
           Serial.println(brkcmd);
