@@ -732,16 +732,17 @@ void electricBrakePedal(uint16_t speedBlend, uint8_t reverseDir, uint8_t brakeAm
     if (reverseDir) {
       brakeVal = -brakeVal;
     }
-
+    //-1000
+    // 
     // Calculate the new input2.cmd with brake component included
     if (input2[inIdx].cmd >= 0 && input2[inIdx].cmd < ELECTRIC_BRAKE_THRES) {
-      input2[inIdx].cmd = MAX(brakeVal, ((ELECTRIC_BRAKE_THRES - input2[inIdx].cmd) * brakeVal) / ELECTRIC_BRAKE_THRES);
+      input2[inIdx].cmd = brakeVal;
     } else if (input2[inIdx].cmd >= -ELECTRIC_BRAKE_THRES && input2[inIdx].cmd < 0) {
-      input2[inIdx].cmd = MIN(brakeVal, ((ELECTRIC_BRAKE_THRES + input2[inIdx].cmd) * brakeVal) / ELECTRIC_BRAKE_THRES);
+      input2[inIdx].cmd = brakeVal;
     } else if (input2[inIdx].cmd >= ELECTRIC_BRAKE_THRES) {
-      input2[inIdx].cmd = MAX(brakeVal, ((input2[inIdx].cmd - ELECTRIC_BRAKE_THRES) * INPUT_MAX) / (INPUT_MAX - ELECTRIC_BRAKE_THRES));
+      input2[inIdx].cmd = brakeVal;
     } else {  // when (input2.cmd < -ELECTRIC_BRAKE_THRES)
-      input2[inIdx].cmd = MIN(brakeVal, ((input2[inIdx].cmd + ELECTRIC_BRAKE_THRES) * INPUT_MIN) / (INPUT_MIN + ELECTRIC_BRAKE_THRES));
+      input2[inIdx].cmd = brakeVal;
     }
   }
   #endif
