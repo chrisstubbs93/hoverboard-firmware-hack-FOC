@@ -1082,7 +1082,7 @@ void readCommand(void) {
 
     #if !defined(VARIANT_HOVERBOARD) && !defined(VARIANT_TRANSPOTTER)
       calcInputCmd(&input1[inIdx], INPUT_MIN, INPUT_MAX);
-      calcInputCmd(&input3[inIdx], 0, 1000);
+      calcInputCmd(&input3[inIdx], 0, 500);
       #if !defined(VARIANT_SKATEBOARD)
         calcInputCmd(&input2[inIdx], INPUT_MIN, INPUT_MAX);
       #else
