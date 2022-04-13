@@ -252,16 +252,12 @@ int main(void) {
 
       if(input3[inIdx].cmd > 0)
       {
-        if(input3[inIdx].cmd > 500)
-        {
-          beepShort(6);
-        }
-        //electricBrakePedal(speedBlend, MultipleTapBrake.b_multipleTap, input3[inIdx].cmd);        
-        if (speedAvg > 0) {                                       // Make sure the braking is opposite to the direction of motion
-            input2[inIdx].cmd  = (int16_t)(-input3[inIdx].cmd);
-          } else {
-            input2[inIdx].cmd  = (int16_t)(input3[inIdx].cmd);
-          }
+        electricBrakePedal(speedBlend, MultipleTapBrake.b_multipleTap, input3[inIdx].cmd);        
+        // if (speedAvg > 0) {                                       // Make sure the braking is opposite to the direction of motion
+        //     input2[inIdx].cmd  = (int16_t)(-input3[inIdx].cmd);
+        //   } else {
+        //     input2[inIdx].cmd  = (int16_t)(input3[inIdx].cmd);
+        //   }
       }
 
       #ifdef ELECTRIC_BRAKE_ENABLE
