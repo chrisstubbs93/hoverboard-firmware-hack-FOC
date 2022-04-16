@@ -267,7 +267,7 @@ void loop() {
           } else if (digitalRead(RevSwPin)) {
             //send it inverted and scaled down for reverse
             //Send(0, int(drvcmd * revspd * (-1)));
-            Send(0, -drvcmd, 0, TRQ_MODE);
+            Send(0, -drvcmd*revspd, 0, TRQ_MODE);
             currentDriveMode = TRQ_MODE;
             //Serial.print("sent: ");
             //Serial.println(int(drvcmd*revspd*(-1)));
