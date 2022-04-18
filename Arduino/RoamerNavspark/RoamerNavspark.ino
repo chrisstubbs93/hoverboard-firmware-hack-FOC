@@ -43,18 +43,19 @@ void setup() {
 void loop()
 {
   //handle sonar
+  sprintf(buf, "$SONAR");
   for (int addr = 0; addr <= NSENSORS - 1; addr++) {
     int angle = 360 / NSENSORS;
-    sprintf(buf, "$SONAR,%d,%d", angle * addr, getSonar(addr));
-    len = sprintf(buf, "%s*%02X\r\n", buf, nmea0183_checksum(buf));
-    gnss_uart_putline(0, (U08*) buf, len);
+    sprintf(buf, "%s,%d:%d", buf, angle * addr, getSonar(addr));
   }
+  len = sprintf(buf, "%s*%02X\r\n", buf, nmea0183_checksum(buf));
+  gnss_uart_putline(0, (U08*) buf, len);
 
   //handle switches
   sprintf(buf, "$BUMP,%d,%d", 0, digitalRead(FRONTSWPIN));
   len = sprintf(buf, "%s*%02X\r\n", buf, nmea0183_checksum(buf));
   gnss_uart_putline(0, (U08*) buf, len);
-  
+
   sprintf(buf, "$BUMP,%d,%d", 180, digitalRead(REARSWPIN));
   len = sprintf(buf, "%s*%02X\r\n", buf, nmea0183_checksum(buf));
   gnss_uart_putline(0, (U08*) buf, len);
