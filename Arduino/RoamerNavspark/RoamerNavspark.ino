@@ -11,37 +11,28 @@ un link
 reset
 */
 
-/*
-Protocol: <LEDstartaddr,LEDlength,R,G,B>
-e.g. <0,100,255,255,255>
-*/
-
-const byte numChars = 32;
-char receivedChars[numChars];
-char tempChars[numChars];        // temporary array for use when parsing
-// variables to hold the parsed data
-int LEDstartaddr = 0;
-int LEDlength = 0;
-int LEDred = 0;
-int LEDgreen = 0;
-int LEDblue = 0;
-boolean newData = false;
-
-//sonar shiz
+//sonar vars
 byte ds[3];
 unsigned long distance = 0;
 int offst;
 #define TCAADDR 0x70 //!< Default address of the multiplexer 0X70.
-#define NSENSORS 2 //number of sonar modules
+#define NSENSORS 4 //number of sonar modules
+#define FRONTSWPIN 12 //front bump sw
+#define REARSWPIN 13 //rear bump sw
 
+//for sending serial
+char buf[32];
+int len;
 
 void setup() {
   GnssConf.init();
   // put your setup code here, to run once:
   Serial.config(STGNSS_UART_8BITS_WORD_LENGTH, STGNSS_UART_1STOP_BITS, STGNSS_UART_NOPARITY);
   Serial.begin(115200);
+  nvsprkSerialPrintln("$STATUS,Running_from_FLASH*00");
 
-  nvsprkSerialPrintln("Running from FLASH");
+  pinMode(FRONTSWPIN, INPUT);
+  pinMode(REARSWPIN, INPUT);
 
   twMaster.config(100000); // 100KHz
   twMaster.begin();
@@ -51,29 +42,22 @@ void setup() {
 
 void loop()
 {
-  // put your main code here, to run repeatedly:
-
-  //handle comms
-  recvWithStartEndMarkers();
-  if (newData == true) {
-    strcpy(tempChars, receivedChars);
-    // this temporary copy is necessary to protect the original data
-    //   because strtok() used in parseData() replaces the commas with \0
-    parseLED();
-    showLEDData();
-    newData = false;
-  }
-
   //handle sonar
   for (int addr = 0; addr <= NSENSORS - 1; addr++) {
-    char buf[32];
-    int len;
-    int angle = 360/NSENSORS;
-    sprintf(buf, "$SONAR,%d,%d", angle*addr, getSonar(addr));
+    int angle = 360 / NSENSORS;
+    sprintf(buf, "$SONAR,%d,%d", angle * addr, getSonar(addr));
     len = sprintf(buf, "%s*%02X\r\n", buf, nmea0183_checksum(buf));
     gnss_uart_putline(0, (U08*) buf, len);
   }
 
+  //handle switches
+  sprintf(buf, "$BUMP,%d,%d", 0, digitalRead(FRONTSWPIN));
+  len = sprintf(buf, "%s*%02X\r\n", buf, nmea0183_checksum(buf));
+  gnss_uart_putline(0, (U08*) buf, len);
+  
+  sprintf(buf, "$BUMP,%d,%d", 180, digitalRead(REARSWPIN));
+  len = sprintf(buf, "%s*%02X\r\n", buf, nmea0183_checksum(buf));
+  gnss_uart_putline(0, (U08*) buf, len);
 }
 
 int getSonar(int addr) {
@@ -87,6 +71,7 @@ int getSonar(int addr) {
 
   twMaster.requestFrom(0x57, 3);
   offst = 0;
+  memset(ds, 0, sizeof(ds)); //clear the registers
   while (twMaster.available())
   {
     ds[offst++] = twMaster.read();
@@ -111,81 +96,6 @@ void nvsprkSerialPrintln(char msgToSend[]) {
   gnss_uart_putline(0, (U08*) buf, len);
 }
 
-
-void recvWithStartEndMarkers() {
-  static boolean recvInProgress = false;
-  static byte ndx = 0;
-  char startMarker = '<';
-  char endMarker = '>';
-  char rc;
-
-  while (Serial.available() > 0 && newData == false) {
-    rc = Serial.read();
-
-    if (recvInProgress == true) {
-      if (rc != endMarker) {
-        receivedChars[ndx] = rc;
-        ndx++;
-        if (ndx >= numChars) {
-          ndx = numChars - 1;
-        }
-      }
-      else {
-        receivedChars[ndx] = '\0'; // terminate the string
-        recvInProgress = false;
-        ndx = 0;
-        newData = true;
-      }
-    }
-
-    else if (rc == startMarker) {
-      recvInProgress = true;
-    }
-  }
-}
-
-//============
-
-void parseLED() {      // split the data into its parts
-
-  char * strtokIndx; // this is used by strtok() as an index
-
-  strtokIndx = strtok(tempChars, ",");     // get the first part - the string
-  LEDstartaddr = atoi(strtokIndx);  // copy it
-
-  strtokIndx = strtok(NULL, ","); // this continues where the previous call left off
-  LEDlength = atoi(strtokIndx);     // convert this part to an integer
-
-  strtokIndx = strtok(NULL, ",");
-  LEDred = atoi(strtokIndx);     // convert this part to a float
-
-  strtokIndx = strtok(NULL, ",");
-  LEDgreen = atoi(strtokIndx);     // convert this part to a float
-
-  strtokIndx = strtok(NULL, ",");
-  LEDblue = atoi(strtokIndx);     // convert this part to a float
-
-}
-
-//============
-
-void showLEDData() {
-
-  char buf[32];
-
-  nvsprkSerialPrint("LEDstartaddr  ");
-  sprintf(buf, "%d", LEDstartaddr);
-  nvsprkSerialPrintln(buf);
-
-  nvsprkSerialPrint("LEDlength ");
-  sprintf(buf, "%d", LEDlength);
-  nvsprkSerialPrintln(buf);
-
-  nvsprkSerialPrint("RGB Values ");
-  sprintf(buf, "R%d, G%d, B%d", LEDred , LEDgreen , LEDblue);
-  nvsprkSerialPrintln(buf);
-
-}
 
 
 void task_called_after_GNSS_update(void)
@@ -215,11 +125,11 @@ int hcget() {
 
 int nmea0183_checksum(char *nmea_data)
 {
-    int crc = 0;
-    int i;
-    // ignore the first $ sign,  no checksum in sentence
-    for (i = 1; i < strlen(nmea_data); i ++) { // removed the - 3 because no cksum is present
-        crc ^= nmea_data[i];
-    }
-    return crc;
+  int crc = 0;
+  int i;
+  // ignore the first $ sign,  no checksum in sentence
+  for (i = 1; i < strlen(nmea_data); i ++) { // removed the - 3 because no cksum is present
+    crc ^= nmea_data[i];
+  }
+  return crc;
 }
