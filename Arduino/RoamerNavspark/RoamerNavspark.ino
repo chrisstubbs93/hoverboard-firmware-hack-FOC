@@ -13,7 +13,9 @@ reset
 
 //sonar vars
 byte ds[3];
+unsigned long distanceraw[3];
 unsigned long distance = 0;
+int nreadings;
 int offst;
 #define TCAADDR 0x70 //!< Default address of the multiplexer 0X70.
 #define NSENSORS 4 //number of sonar modules
@@ -34,7 +36,7 @@ void setup() {
   pinMode(FRONTSWPIN, INPUT);
   pinMode(REARSWPIN, INPUT);
 
-  twMaster.config(100000); // 100KHz
+  twMaster.config(50000); // 50KHz
   twMaster.begin();
   twMaster.setTransmitDeviceAddr(0x57); // 0x57 is the device address
   twMaster.setReceiveDeviceAddr(0x57); // 0x57 is the device address
@@ -62,25 +64,39 @@ void loop()
 }
 
 int getSonar(int addr) {
+  distance = 0;
+  nreadings = 0;
   hcselect(addr);
-  delay(50); //wait for device to finish
-  //ping device
-  twMaster.beginTransmission(0x57);
-  twMaster.write(1); //1 = cmd to start meansurement
-  twMaster.endTransmission();
-  delay(120); //wait for device to finish
-
-  twMaster.requestFrom(0x57, 3);
-  offst = 0;
-  memset(ds, 0, sizeof(ds)); //clear the registers
-  while (twMaster.available())
-  {
-    ds[offst++] = twMaster.read();
+  delay(50); //wait for device to switch
+  //ping device x3 and avg
+  for (int r = 0; r <= 2; r++) {
+    twMaster.beginTransmission(0x57);
+    twMaster.write(1); //1 = cmd to start meansurement
+    twMaster.endTransmission();
+    delay(110); //wait for device to finish
+    twMaster.requestFrom(0x57, 3);
+    offst = 0;
+    memset(ds, 0, sizeof(ds)); //clear the registers
+    while (twMaster.available())
+    {
+      ds[offst++] = twMaster.read();
+    }
+    distanceraw[r] = (unsigned long)(ds[0]) * 65536;
+    distanceraw[r] = distanceraw[r] + (unsigned long)(ds[1]) * 256;
+    distanceraw[r] = (distanceraw[r] + (unsigned long)(ds[2])) / 10000;
+    
+    if ((1<=distanceraw[r])&&(900>=distanceraw[r]))    //measured value between 1cm to 9meters
+    {
+        distance = distance + distanceraw[r];
+        nreadings++;
+    }else 
+    {
+        //rekt
+    }
+    
   }
-  distance = (unsigned long)(ds[0]) * 65536;
-  distance = distance + (unsigned long)(ds[1]) * 256;
-  distance = (distance + (unsigned long)(ds[2])) / 10000;
-  return distance;
+  if (nreadings>0){return distance/nreadings;}
+  else {return 999;}
 }
 
 
