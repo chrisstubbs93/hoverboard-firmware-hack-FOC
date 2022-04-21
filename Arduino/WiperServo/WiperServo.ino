@@ -98,7 +98,7 @@ long interval = 50;        // time constant for timers
 #define SPD_MODE        2               // [-] SPEED mode
 #define TRQ_MODE        3               // [-] TORQUE mode
 
-int16_t currentDriveMode = SPD_MODE;
+int16_t currentDriveMode = TRQ_MODE;
 
 void setup() {
   pinMode(LocRemSwPin, INPUT);
@@ -260,17 +260,12 @@ void loop() {
           int drvcmd = map(AccelPedalVal.get() - PedalCentre, pedaldeadband, (1023 - PedalCentre), 0, 1000);
           //hoverbaord firmware input range is -1000 to 1000
           if (digitalRead(DriveSwPin)) {
-            Send(0, drvcmd, 0, TRQ_MODE);
-            currentDriveMode = TRQ_MODE;
-            //Serial.print("sent: ");
-            //Serial.println(drvcmd);
+            Send(0, drvcmd, 0, currentDriveMode);
           } else if (digitalRead(RevSwPin)) {
-            //send it inverted and scaled down for reverse
-            //Send(0, int(drvcmd * revspd * (-1)));
-            Send(0, -drvcmd*revspd, 0, TRQ_MODE);
-            currentDriveMode = TRQ_MODE;
-            //Serial.print("sent: ");
-            //Serial.println(int(drvcmd*revspd*(-1)));
+            Send(0, -drvcmd * revspd, 0, currentDriveMode);
+          }
+          else {
+            Send(0, 0, 0, currentDriveMode);
           }
         } else if (AccelPedalVal.get() - PedalCentre < (0 - pedaldeadband)) { //brake
           int brkcmd = map(PedalCentre - AccelPedalVal.get(), pedaldeadband, (PedalCentre), 0, 1000); //500 = full brake

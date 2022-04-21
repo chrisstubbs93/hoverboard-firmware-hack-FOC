@@ -886,9 +886,9 @@ void readInputRaw(void) {
         input1[inIdx].raw = commandL.steer;
         input2[inIdx].raw = commandL.speed;
         input3[inIdx].raw = commandL.brake;
-        if(dynamicDrivingMode != commandL.driveMode)
+        if(dynamicDrivingMode != commandL.driveMode && !timeoutFlgADC && !timeoutFlgSerial && !timeoutFlgGen) 
         {
-          if(commandL.driveMode == 0 || commandL.driveMode == 1 || commandL.driveMode == 2 || commandL.driveMode == 3)
+          if(commandL.driveMode == 1 || commandL.driveMode == 2 || commandL.driveMode == 3)
           {
             dynamicDrivingMode = commandL.driveMode;
             beepShortMany(8, 1);
