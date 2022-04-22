@@ -10,17 +10,17 @@ upload code
 un link
 reset
 */
+#define TCAADDR 0x70 //!< Default address of the multiplexer 0X70.
+#define NSENSORS 4 //number of sonar modules
+#define NAVGS 3 //number of pings to average
+#define FRONTSWPIN 12 //front bump sw
+#define REARSWPIN 13 //rear bump sw
 
 //sonar vars
 byte ds[3];
-unsigned long distanceraw[3];
-unsigned long distance = 0;
-int nreadings;
-int offst;
-#define TCAADDR 0x70 //!< Default address of the multiplexer 0X70.
-#define NSENSORS 4 //number of sonar modules
-#define FRONTSWPIN 12 //front bump sw
-#define REARSWPIN 13 //rear bump sw
+unsigned long distanceraw[NSENSORS];
+unsigned long distance[NSENSORS];
+int nreadings[NSENSORS];
 
 //for sending serial
 char buf[32];
@@ -45,10 +45,11 @@ void setup() {
 void loop()
 {
   //handle sonar
+  getSonar();
   sprintf(buf, "$SONAR");
   for (int addr = 0; addr <= NSENSORS - 1; addr++) {
     int angle = 360 / NSENSORS;
-    sprintf(buf, "%s,%d:%d", buf, angle * addr, getSonar(addr));
+    sprintf(buf, "%s,%d:%d", buf, angle * addr, distance[addr]);
   }
   len = sprintf(buf, "%s*%02X\r\n", buf, nmea0183_checksum(buf));
   gnss_uart_putline(0, (U08*) buf, len);
@@ -63,42 +64,52 @@ void loop()
   gnss_uart_putline(0, (U08*) buf, len);
 }
 
-int getSonar(int addr) {
-  distance = 0;
-  nreadings = 0;
-  hcselect(addr);
-  delay(50); //wait for device to switch
-  //ping device x3 and avg
-  for (int r = 0; r <= 2; r++) {
-    twMaster.beginTransmission(0x57);
-    twMaster.write(1); //1 = cmd to start meansurement
-    twMaster.endTransmission();
-    delay(110); //wait for device to finish
-    twMaster.requestFrom(0x57, 3);
-    offst = 0;
-    memset(ds, 0, sizeof(ds)); //clear the registers
-    while (twMaster.available())
-    {
-      ds[offst++] = twMaster.read();
+int getSonar() {
+  memset(nreadings, 0, sizeof(nreadings)); //clear the registers
+  memset(distanceraw, 0, sizeof(distanceraw)); //clear the registers
+
+  for (int r = 0; r <= NAVGS-1; r++) { //repeats for avg
+    hcsetall(); //send to each sub-busses
+    sonarPing(); //PING
+    for (int addr = 0; addr <= NSENSORS - 1; addr++) {
+      unsigned long pingResult = sonarGetResult(addr);
+      if ((1 <= pingResult) && (900 >= pingResult)) //measured value between 1cm to 9meters
+      {
+        distanceraw[addr] = distanceraw[addr] + pingResult;
+        nreadings[addr]++;
+      }
     }
-    distanceraw[r] = (unsigned long)(ds[0]) * 65536;
-    distanceraw[r] = distanceraw[r] + (unsigned long)(ds[1]) * 256;
-    distanceraw[r] = (distanceraw[r] + (unsigned long)(ds[2])) / 10000;
-    
-    if ((1<=distanceraw[r])&&(900>=distanceraw[r]))    //measured value between 1cm to 9meters
-    {
-        distance = distance + distanceraw[r];
-        nreadings++;
-    }else 
-    {
-        //rekt
-    }
-    
   }
-  if (nreadings>0){return distance/nreadings;}
-  else {return 999;}
+  for (int addr = 0; addr <= NSENSORS - 1; addr++) {
+    if (nreadings[addr] > 0) {
+      distance[addr] = distanceraw[addr] / nreadings[addr];
+    }
+    else {
+      distance[addr] = 999;
+    }
+  }
 }
 
+void sonarPing() {
+  twMaster.beginTransmission(0x57);
+  twMaster.write(1); //1 = cmd to start meansurement
+  twMaster.endTransmission();
+  delay(110); //wait for device to finish
+}
+unsigned long sonarGetResult(uint8_t addr) {
+  hcselect(addr);
+  twMaster.requestFrom(0x57, 3);
+  memset(ds, 0, sizeof(ds)); //clear the registers
+  for (int o = 0; o <= 2; o++)
+  {
+    ds[o] = twMaster.read();
+  }
+  unsigned long temp;
+  temp = (unsigned long)(ds[0]) * 65536;
+  temp = temp + (unsigned long)(ds[1]) * 256;
+  temp = (temp + (unsigned long)(ds[2])) / 10000;
+  return temp;
+}
 
 void nvsprkSerialPrint(char msgToSend[]) {
   char buf[32];
@@ -128,6 +139,7 @@ void hcselect(uint8_t i) {
     twMaster.write(1 << i);
     twMaster.endTransmission();
   } while (!(hcget() == i));
+  delay(20); //wait for device to switch
 }
 
 /*! Check the current i2c sub-bus for a specific sensor. Output 0...7 */
@@ -139,6 +151,22 @@ int hcget() {
     c = c >> 1;
   }
 }
+
+void hcsetall() {
+  do {
+    twMaster.beginTransmission(TCAADDR);
+    twMaster.write(0xFF);
+    twMaster.endTransmission();
+  } while (!(hcgetall() == 0xFF));
+  delay(20); //wait for device to switch
+}
+
+int hcgetall() {
+  twMaster.requestFrom(TCAADDR, 1);
+  byte c = twMaster.read();
+  return c;
+}
+
 
 int nmea0183_checksum(char *nmea_data)
 {
