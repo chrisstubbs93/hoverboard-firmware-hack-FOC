@@ -16,8 +16,8 @@ flash .bin with ST-LINK
 Input range ovser serial is -1000 to 1000
 Set up front hoverboard with 
 ```
-#define I_MOT_MAX       8
-#define I_DC_MAX        10
+#define I_MOT_MAX       5
+#define I_DC_MAX        7
 ```
 Set up rear hoverboard with 
 ```
