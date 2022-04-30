@@ -49,7 +49,7 @@ SerialCommand Command;
 
 unsigned long previousMillisA = 0;
 int deadband = 1;
-int SteerCentreOffset = 0;
+int SteerCentreOffset = -100;
 int PedalCentre = 550;
 float revspd = 0.3;
 int poslimit = 150; //150 is somewhat arbritrary number that represents 90 degrees each way
