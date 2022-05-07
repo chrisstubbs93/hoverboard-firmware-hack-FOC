@@ -151,8 +151,8 @@
 #define DIAG_ENA        1               // [-] Motor Diagnostics enable flag: 0 = Disabled, 1 = Enabled (default)
 
 // Limitation settings
-#define I_MOT_MAX       5             // [A] Maximum single motor current limit
-#define I_DC_MAX        7              // [A] Maximum stage2 DC Link current limit for Commutation and Sinusoidal types (This is the final current protection. Above this value, current chopping is applied. To avoid this make sure that I_DC_MAX = I_MOT_MAX + 2A)
+#define I_MOT_MAX       23             // [A] Maximum single motor current limit
+#define I_DC_MAX        25              // [A] Maximum stage2 DC Link current limit for Commutation and Sinusoidal types (This is the final current protection. Above this value, current chopping is applied. To avoid this make sure that I_DC_MAX = I_MOT_MAX + 2A)
 #define N_MOT_MAX       1200            // [rpm] Maximum motor speed limit
 
 // Field Weakening / Phase Advance
@@ -612,7 +612,7 @@
     defined(FEEDBACK_SERIAL_USART3) || defined(CONTROL_SERIAL_USART3) || defined(DEBUG_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3)
   #define SERIAL_START_FRAME      0xABCD                  // [-] Start frame definition for serial commands
   #define SERIAL_BUFFER_SIZE      64                      // [bytes] Size of Serial Rx buffer. Make sure it is always larger than the structure size
-  #define SERIAL_TIMEOUT          300                     // [-] Serial timeout duration for the received data. 160 ~= 0.8 sec. Calculation: 0.8 sec / 0.005 sec
+  #define SERIAL_TIMEOUT          500                     // [-] Serial timeout duration for the received data. 160 ~= 0.8 sec. Calculation: 0.8 sec / 0.005 sec
 #endif
 #if defined(FEEDBACK_SERIAL_USART2) || defined(CONTROL_SERIAL_USART2) || defined(DEBUG_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2)
   #ifndef USART2_BAUD

@@ -59,6 +59,7 @@ extern volatile uint8_t  timeoutFlgGen; // global flag for general timeout count
 extern volatile uint32_t main_loop_counter;
 
 uint8_t dynamicDrivingMode = CTRL_MOD_REQ; // initialise a new global (externally settable) var to set the driving mode. Sets it to CTRL_MOD_REQ to be used an a default
+extern uint32_t inactivity_timeout_counter;
 
 #if defined(CONTROL_PPM_LEFT) || defined(CONTROL_PPM_RIGHT)
 extern volatile uint16_t ppm_captured_value[PPM_NUM_CHANNELS+1];
@@ -1309,6 +1310,7 @@ void usart_process_command(SerialCommand *command_in, SerialCommand *command_out
         #ifdef CONTROL_SERIAL_USART2
         timeoutFlgSerial_L = 0;         // Clear timeout flag
         timeoutCntSerial_L = 0;         // Reset timeout counter
+        inactivity_timeout_counter = 0; //reset inactivity timeout
         #endif
       } else if (usart_idx == 3) {      // Sideboard USART3
         #ifdef CONTROL_SERIAL_USART3
