@@ -10,6 +10,8 @@ upload code
 un link
 reset
 */
+//#include “wiring_intr.h”
+
 #define TCAADDR 0x70 //!< Default address of the multiplexer 0X70.
 #define NSENSORS 4 //number of sonar modules
 #define NAVGS 3 //number of pings to average
@@ -35,6 +37,8 @@ void setup() {
 
   pinMode(FRONTSWPIN, INPUT);
   pinMode(REARSWPIN, INPUT);
+  attachInterrupt(FRONTSWPIN, handleBump, RISING);
+  attachInterrupt(REARSWPIN, handleBump, RISING);
 
   twMaster.config(50000); // 50KHz
   twMaster.begin();
@@ -54,7 +58,10 @@ void loop()
   len = sprintf(buf, "%s*%02X\r\n", buf, nmea0183_checksum(buf));
   gnss_uart_putline(0, (U08*) buf, len);
 
-  //handle switches
+  handleBump();
+}
+
+void handleBump() {
   sprintf(buf, "$BUMP,%d,%d", 0, digitalRead(FRONTSWPIN));
   len = sprintf(buf, "%s*%02X\r\n", buf, nmea0183_checksum(buf));
   gnss_uart_putline(0, (U08*) buf, len);
@@ -62,6 +69,7 @@ void loop()
   sprintf(buf, "$BUMP,%d,%d", 180, digitalRead(REARSWPIN));
   len = sprintf(buf, "%s*%02X\r\n", buf, nmea0183_checksum(buf));
   gnss_uart_putline(0, (U08*) buf, len);
+
 }
 
 int getSonar() {
