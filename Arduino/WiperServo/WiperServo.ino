@@ -62,6 +62,10 @@ bool lockout = false;
 Smoothed <int> SteeringWheelVal;
 Smoothed <int> SteeringFeedbackVal;
 Smoothed <int> AccelPedalVal;
+bool manualBraking;
+bool currentLimiting;
+int brkcmd;
+int drvcmd;
 
 // PID for posn control
 double Pk1 = 7;  //speed it gets there
@@ -83,7 +87,7 @@ unsigned long start;
 
 int pot;
 int sp;
-int pos = 0;
+int pos = 0; //mapped steeringwheelval avg
 int posraw = 0;
 int I_reading = 0;
 
@@ -157,48 +161,50 @@ void Send(int16_t uSteer, int16_t uSpeed, int16_t brake, int16_t driveMode)
 void wiperServo(int sp) {
   Setpoint1 = constrain(map(sp, -100, 100, 0 - poslimit, poslimit), 0 - poslimit, poslimit);
   pot = SteeringFeedbackVal.get();//analogRead(SteeringFeedbackPin) + SteerCentreOffset;
-  Serial.print(" pos_sp:");
-  Serial.print (Setpoint1);
-  Serial.print(" pos_ip:");
+  //Serial.print(" pos_sp:");
+  //Serial.print (Setpoint1);
+  //Serial.print(" pos_ip:");
   Input1 = map(pot, 0, 1023, -255, 255);
-  Serial.print (Input1);
+  //Serial.print (Input1);
   PID1.Compute();
-  Serial.print(" pos_op:");
-  Serial.print(Output1);
+  //Serial.print(" pos_op:");
+  //Serial.print(Output1);
   I_reading = analogRead(CurrentSensePin);
-  Serial.print(" I_raw:");
-  Serial.print(I_reading);
+  //Serial.print(" I_raw:");
+  //Serial.print(I_reading);
   Input2 = (I_reading - izerooffset) * 10 / ical; //current feedback in 0.1A
-  Serial.print(" I_ip:");
-  Serial.print(Input2);
+  //Serial.print(" I_ip:");
+  //Serial.print(Input2);
   PID2.Compute();
-  Serial.print(" I_op:");
-  Serial.print(Output2);
+  //Serial.print(" I_op:");
+  //Serial.print(Output2);
 
-  if (digitalRead(DriveSwPin)) {
-    Serial.print(" Gear:D ");
-  } else if (digitalRead(RevSwPin)) {
-    Serial.print(" Gear:R ");
-  } else {
-    Serial.print(" Gear:N ");
-  }
+  //  if (digitalRead(DriveSwPin)) {
+  //    Serial.print(" Gear:D ");
+  //  } else if (digitalRead(RevSwPin)) {
+  //    Serial.print(" Gear:R ");
+  //  } else {
+  //    Serial.print(" Gear:N ");
+  //  }
 
   //take minimum loop output
   if (abs(Output1) <= abs(Output2)) {
     //position mode
+    currentLimiting = false;
     pwm = Output1;
-    Serial.print(" Mode:Pos");
+    //Serial.print(" Mode:Pos");
     CC_iterations = 0;
   }
   else {
     //i lim mode
+    currentLimiting = true;
     pwm = Output2;
     if (Output1 < 0) {
       pwm = Output2 * -1; //current loop is unidirectional so flip it for constant negative current output (CC reverse)
     }
-    Serial.println(" Mode:CC");
+    //Serial.println(" Mode:CC");
     CC_iterations++;
-    Serial.println(CC_iterations);
+    //Serial.println(CC_iterations);
   }
 
   if (CC_iterations > (1000 * lockout_time) / interval) {
@@ -207,7 +213,7 @@ void wiperServo(int sp) {
   if (lockout) {
     pwm = 0;
     digitalWrite(EstopPin, HIGH);
-    Serial.println("LOCKOUT");
+    //Serial.println("LOCKOUT");
   }
 
   if (pwm > 0) {
@@ -241,40 +247,52 @@ void loop() {
       pos = constrain(map(SteeringWheelVal.get(), 0, 1024, -100, 100), -100, 100);
     }
     wiperServo(pos);              // tell servo to go to position in variable 'pos'
-    //pedalval = analogRead(LeftPedalPin)-550;
-    Serial.print(" Pedal_raw:");
-    Serial.print(AccelPedalVal.getLast());
-    Serial.print(" Pedal_avg:");
-    Serial.println(AccelPedalVal.get() - PedalCentre);
+    //Serial.print(" Pedal_raw:");
+    //Serial.print(AccelPedalVal.getLast());
+    //Serial.print(" Pedal_avg:");
+    //Serial.println(AccelPedalVal.get() - PedalCentre);
 
     if (analogRead(BrakeHallPin) > 200) {
-      Serial.println("Brake On");
-      Send(0, 0, 0, currentDriveMode);
+      //Serial.println("Brake On");
+      manualBraking = true;
+      drvcmd = 0;
+      brkcmd = 0;
+      Send(0, drvcmd, brkcmd, currentDriveMode); //stop if manual braking
     } else { //brake is not on
+      manualBraking = false;
       //TODO: and check if in local mode
       if (lockout) {
-        Send(0, 0, 0, currentDriveMode); //stop if steering fault
+        drvcmd = 0;
+        brkcmd = 0;
+        Send(0, drvcmd, brkcmd, currentDriveMode); //stop if steering fault
       }
       else { //no steering faults
         if (AccelPedalVal.get() - PedalCentre > pedaldeadband) {
-          int drvcmd = map(AccelPedalVal.get() - PedalCentre, pedaldeadband, (1023 - PedalCentre), 0, 1000);
+          drvcmd = map(AccelPedalVal.get() - PedalCentre, pedaldeadband, (1023 - PedalCentre), 0, 1000);
+          brkcmd = 0;
           //hoverbaord firmware input range is -1000 to 1000
           if (digitalRead(DriveSwPin)) {
-            Send(0, drvcmd, 0, currentDriveMode);
+            Send(0, drvcmd, brkcmd, currentDriveMode);
           } else if (digitalRead(RevSwPin)) {
-            Send(0, -drvcmd * revspd, 0, currentDriveMode);
+            drvcmd = -drvcmd * revspd;
+            Send(0, drvcmd, brkcmd, currentDriveMode);
           }
           else {
-            Send(0, 0, 0, currentDriveMode);
+            drvcmd = 0;
+            brkcmd = 0;
+            Send(0, drvcmd, brkcmd, currentDriveMode);
           }
         } else if (AccelPedalVal.get() - PedalCentre < (0 - pedaldeadband)) { //brake
-          int brkcmd = map(PedalCentre - AccelPedalVal.get(), pedaldeadband, (PedalCentre), 0, 1000); //500 = full brake
-          Send(0, 0, brkcmd, currentDriveMode);
-          Serial.print("sentbrake: ");
-          Serial.println(brkcmd);
+          brkcmd = map(PedalCentre - AccelPedalVal.get(), pedaldeadband, (PedalCentre), 0, 1000); //500 = full brake
+          drvcmd = 0;
+          Send(0, drvcmd, brkcmd, currentDriveMode);
+          //Serial.print("sentbrake: ");
+          //Serial.println(brkcmd);
         }
         else {
-          Send(0, 0, 0, currentDriveMode);
+          drvcmd = 0;
+          brkcmd = 0;
+          Send(0, drvcmd, brkcmd, currentDriveMode); //stop if no pedal input
         }
       }
     }
@@ -282,6 +300,73 @@ void loop() {
   //delay(interval);
 }
 
+void steeringtelem() {
+
+  //structure: $STEER,INPUT,GEAR,MANUALBRAKE,PEDALAVG,STEERSP,STEERIP,STEEROP,CURRENTIP,CURRENTOP,CURRENTLIMITING,LOCKOUT,SENTSPEED,SENTBRAKE*AA
+
+  Serial.print("$STEER,");
+  //INPUT: 1/0 (1 is remote, 0 is local)
+  Serial.print(digitalRead(LocRemSwPin));
+  Serial.print(",");
+
+  //GEAR: D/N/R
+  if (digitalRead(DriveSwPin)) {
+    Serial.print("D");
+  } else if (digitalRead(RevSwPin)) {
+    Serial.print("R");
+  } else {
+    Serial.print("N");
+  }
+  Serial.print(",");
+
+  //manualbrake
+  Serial.print(manualBraking);
+  Serial.print(",");
+
+  //pedalavg
+  Serial.println(AccelPedalVal.get() - PedalCentre);
+  Serial.print(",");
+
+  //steersp
+  Serial.print(pos);
+  Serial.print(",");
+
+  //steerip (feedback)
+  Serial.print(Input1)
+  Serial.print(",");
+
+  //steerop (loop output)
+  Serial.print(Output1)
+  Serial.print(",");
+
+  //currentip (0.1 amps)
+  Serial.print(Input2)
+  Serial.print(",");
+
+  //currentop (loop output)
+  Serial.print(Output2)
+  Serial.print(",");
+
+  //currentlimiting 0/1 1 is limiting
+  Serial.print(currentLimiting);
+  Serial.print(",");
+
+  //lockout 0/1 1 is locked out
+  Serial.print(lockout);
+  Serial.print(",");
+
+  //sentspeed
+  Serial.print(drvcmd);
+  Serial.print(",");
+
+  //sentbrake
+  Serial.print(brkcmd);
+  Serial.print("*");
+
+  //checksum
+  Serial.println("AA");
+
+}
 
 /**
    Divides a given PWM pin frequency by a divisor.
