@@ -303,69 +303,58 @@ void loop() {
 void steeringtelem() {
 
   //structure: $STEER,INPUT,GEAR,MANUALBRAKE,PEDALAVG,STEERSP,STEERIP,STEEROP,CURRENTIP,CURRENTOP,CURRENTLIMITING,LOCKOUT,SENTSPEED,SENTBRAKE*AA
-
-  Serial.print("$STEER,");
+  char buf[64];
+  sprintf(buf, "$STEER");
+  
   //INPUT: 1/0 (1 is remote, 0 is local)
-  Serial.print(digitalRead(LocRemSwPin));
-  Serial.print(",");
+  sprintf(buf, "%s,%d", buf, digitalRead(LocRemSwPin));
 
   //GEAR: D/N/R
   if (digitalRead(DriveSwPin)) {
-    Serial.print("D");
+    sprintf(buf, "%s,D", buf);
   } else if (digitalRead(RevSwPin)) {
-    Serial.print("R");
+    sprintf(buf, "%s,R", buf);
   } else {
-    Serial.print("N");
+    sprintf(buf, "%s,N", buf);
   }
-  Serial.print(",");
 
   //manualbrake
-  Serial.print(manualBraking);
-  Serial.print(",");
+  sprintf(buf, "%s,%d", buf, manualBraking);
 
   //pedalavg
-  Serial.println(AccelPedalVal.get() - PedalCentre);
-  Serial.print(",");
+  sprintf(buf, "%s,%d", buf, AccelPedalVal.get() - PedalCentre);
 
   //steersp
-  Serial.print(pos);
-  Serial.print(",");
+  sprintf(buf, "%s,%d", buf, pos);
 
   //steerip (feedback)
-  Serial.print(Input1)
-  Serial.print(",");
+  sprintf(buf, "%s,%d", buf, Input1);
 
   //steerop (loop output)
-  Serial.print(Output1)
-  Serial.print(",");
+  sprintf(buf, "%s,%d", buf, Output1);
 
   //currentip (0.1 amps)
-  Serial.print(Input2)
-  Serial.print(",");
+  sprintf(buf, "%s,%d", buf, Input2);
 
   //currentop (loop output)
-  Serial.print(Output2)
-  Serial.print(",");
+  sprintf(buf, "%s,%d", buf, Output2);
 
   //currentlimiting 0/1 1 is limiting
-  Serial.print(currentLimiting);
-  Serial.print(",");
+  sprintf(buf, "%s,%d", buf, currentLimiting);
 
   //lockout 0/1 1 is locked out
-  Serial.print(lockout);
-  Serial.print(",");
+  sprintf(buf, "%s,%d", buf, lockout);
 
   //sentspeed
-  Serial.print(drvcmd);
-  Serial.print(",");
+  sprintf(buf, "%s,%d", buf, drvcmd);
 
   //sentbrake
-  Serial.print(brkcmd);
-  Serial.print("*");
+  sprintf(buf, "%s,%d", buf, brkcmd);
 
   //checksum
-  Serial.println("AA");
+  sprintf(buf, "%s*%02X\r\n", buf, nmea0183_checksum(buf));
 
+  Serial.println(buf);
 }
 
 /**
@@ -444,4 +433,16 @@ int freeMemory() {
 #else  // __arm__
   return __brkval ? &top - __brkval : &top - __malloc_heap_start;
 #endif  // __arm__
+}
+
+
+int nmea0183_checksum(char *nmea_data)
+{
+  int crc = 0;
+  int i;
+  // ignore the first $ sign,  no checksum in sentence
+  for (i = 1; i < strlen(nmea_data); i ++) { // removed the - 3 because no cksum is present
+    crc ^= nmea_data[i];
+  }
+  return crc;
 }
