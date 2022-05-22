@@ -296,8 +296,10 @@ void loop() {
         }
       }
     }
+    steeringtelem();
   }
   //delay(interval);
+
 }
 
 void steeringtelem() {
@@ -305,7 +307,7 @@ void steeringtelem() {
   //structure: $STEER,INPUT,GEAR,MANUALBRAKE,PEDALAVG,STEERSP,STEERIP,STEEROP,CURRENTIP,CURRENTOP,CURRENTLIMITING,LOCKOUT,SENTSPEED,SENTBRAKE*AA
   char buf[64];
   sprintf(buf, "$STEER");
-  
+
   //INPUT: 1/0 (1 is remote, 0 is local)
   sprintf(buf, "%s,%d", buf, digitalRead(LocRemSwPin));
 
