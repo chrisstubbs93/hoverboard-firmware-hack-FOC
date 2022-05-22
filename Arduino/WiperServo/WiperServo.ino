@@ -320,13 +320,13 @@ void steeringtelem() {
     sprintf(buf, "%s,N", buf);
   }
 
-  //manualbrake
+  //manualbrake 0/1 (1 is braking)
   sprintf(buf, "%s,%d", buf, manualBraking);
 
-  //pedalavg
+  //pedalavg (-550 (e-brake) - 0 - ~+500 (full accel))
   sprintf(buf, "%s,%d", buf, AccelPedalVal.get() - PedalCentre);
 
-  //steersp
+  //steersp -100 (right) to 100 (left)
   sprintf(buf, "%s,%d", buf, pos);
 
   //steerip (feedback)
@@ -336,7 +336,11 @@ void steeringtelem() {
   sprintf(buf, "%s,%d", buf, Output1);
 
   //currentip (0.1 amps)
-  sprintf(buf, "%s,%d", buf, Input2);
+  char str_currentip[6];
+  dtostrf(Input2, 4, 2, str_currentip);
+  sprintf(buf, "%s,%s", buf, str_currentip);
+  
+  sprintf(temperature,"%s F", str_temp);
 
   //currentop (loop output)
   sprintf(buf, "%s,%d", buf, Output2);
@@ -347,14 +351,14 @@ void steeringtelem() {
   //lockout 0/1 1 is locked out
   sprintf(buf, "%s,%d", buf, lockout);
 
-  //sentspeed
+  //sentspeed (0-1000)
   sprintf(buf, "%s,%d", buf, drvcmd);
 
-  //sentbrake
+  //sentbrake (0-1000)
   sprintf(buf, "%s,%d", buf, brkcmd);
 
   //checksum
-  sprintf(buf, "%s*%02X\r\n", buf, nmea0183_checksum(buf));
+  sprintf(buf, "%s*%02X", buf, nmea0183_checksum(buf));
 
   Serial.println(buf);
 }
