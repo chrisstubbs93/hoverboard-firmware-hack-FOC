@@ -305,6 +305,8 @@ void loop() {
 void steeringtelem() {
 
   //structure: $STEER,INPUT,GEAR,MANUALBRAKE,PEDALAVG,STEERSP,STEERIP,STEEROP,CURRENTIP,CURRENTOP,CURRENTLIMITING,LOCKOUT,SENTSPEED,SENTBRAKE*AA
+  // $STEER,0,D,0,-9,-63,0,0,0.67,0,0,0,0,0*2E
+  
   char buf[64];
   sprintf(buf, "$STEER");
 
@@ -335,12 +337,10 @@ void steeringtelem() {
   //steerop (loop output)
   sprintf(buf, "%s,%d", buf, Output1);
 
-  //currentip (0.1 amps)
+  //currentip (0.1 amps) (note this is decimal to 2dp)
   char str_currentip[6];
   dtostrf(Input2, 4, 2, str_currentip);
   sprintf(buf, "%s,%s", buf, str_currentip);
-  
-  sprintf(temperature,"%s F", str_temp);
 
   //currentop (loop output)
   sprintf(buf, "%s,%d", buf, Output2);
