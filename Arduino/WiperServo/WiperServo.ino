@@ -237,12 +237,12 @@ void loop() {
     previousMillisA = currentMillisA;   // save the last time you blinked the LED
 
     if (digitalRead(LocRemSwPin)) { //remote mode
-      // while (Serial.available() > 0) {
-      //   int posraw = Serial.parseInt();
-      //   if (Serial.read() == '\n') {
-      //     pos = constrain(posraw, -100, 100);
-      //   }
-      // }
+      while (Serial.available() > 0) {
+        int posraw = Serial.parseInt();
+        if (Serial.read() == '\n') {
+          pos = constrain(posraw, -100, 100);
+        }
+      }
     } else { //local mode
       pos = constrain(map(SteeringWheelVal.get(), 0, 1024, -100, 100), -100, 100);
     }
@@ -360,8 +360,7 @@ void steeringtelem() {
   //checksum
   sprintf(buf, "%s*%02X", buf, nmea0183_checksum(buf));
 
-  //Serial.println(buf);
-  Serial.println("$STEER,0,D,0,-9,-63,0,0,0.67,0,0,0,0,0*2E");
+  Serial.println(buf);
 }
 
 /**
