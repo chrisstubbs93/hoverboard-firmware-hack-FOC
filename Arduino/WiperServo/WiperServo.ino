@@ -360,7 +360,8 @@ void steeringtelem() {
   //checksum
   sprintf(buf, "%s*%02X", buf, nmea0183_checksum(buf));
 
-  Serial.println(buf);
+  //Serial.println(buf);
+  Serial.println("$STEER,0,D,0,-9,-63,0,0,0.67,0,0,0,0,0*2E")
 }
 
 /**
