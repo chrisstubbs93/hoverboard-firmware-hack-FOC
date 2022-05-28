@@ -340,7 +340,7 @@ void steeringtelem() {
   //currentip (0.1 amps) (note this is decimal to 2dp)
   char str_currentip[6];
   dtostrf(Input2, 4, 2, str_currentip);
-  sprintf(buf, "%s,%d", buf, 0); //is this the null bug?  sprintf(buf, "%s,%s", buf, str_currentip)
+  sprintf(buf, "%s,%s", buf, str_currentip);
 
   //currentop (loop output)
   sprintf(buf, "%s,%d", buf, Output2);
