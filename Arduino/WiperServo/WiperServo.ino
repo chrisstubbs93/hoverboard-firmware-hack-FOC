@@ -49,10 +49,10 @@ SerialCommand Command;
 
 unsigned long previousMillisA = 0;
 int deadband = 1;
-int SteerCentreOffset = -75;
+int SteerCentreOffset = -160;
 int PedalCentre = 550;
 float revspd = 0.3;
-int poslimit = 135; //150 is somewhat arbritrary number that represents 90 degrees each way
+int poslimit = 100; //150 is somewhat arbritrary number that represents 90 degrees each way
 float izerooffset = 350.0; //adc counts at 0 amps
 float ical = 30.0;//adc counts per 1amp
 double ilim = 80; //in 0.1A
