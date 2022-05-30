@@ -236,12 +236,13 @@ void loop() {
       if (digitalRead(manualBraking)){
         //holding hand brake
         digitalWrite(AUX1pin, HIGH);
-        delay(250);
+        delay(2000);
         digitalWrite(AUX1pin, LOW);
         delay(2000); //delay between front and back
         digitalWrite(AUX2pin, HIGH);
-        delay(250);
+        delay(2000);
         digitalWrite(AUX2pin, LOW);
+        delay(5000); //delay for driver to release pedals
       }
       
     }
