@@ -230,26 +230,24 @@ void wiperServo(int sp) {
 void loop() {
   unsigned long currentMillisA = millis(); // store the current time
 
-
+//manual power up routine for hoverboards
   if (!digitalRead(DriveSwPin) && !digitalRead(RevSwPin)){
     //in neutral
     if (AccelPedalVal.get() - PedalCentre < -300){
       //holding foot brake
       if (ManualBrakeVal.get() > 250){
-        Serial.println("brake on");
         //holding hand brake
         digitalWrite(AUX1pin, HIGH);
-        delay(1000);
+        delay(500);
         digitalWrite(AUX1pin, LOW);
         delay(1000); //delay between front and back
         digitalWrite(AUX2pin, HIGH);
-        delay(1000);
+        delay(500);
         digitalWrite(AUX2pin, LOW);
         while(ManualBrakeVal.get() > 250)
         {
           //wait until released
           ManualBrakeVal.add(analogRead(BrakeHallPin));
-          Serial.print("loopin ");
         }
       }
       
@@ -275,13 +273,13 @@ void loop() {
         if (Serial.read() == 'F') {
           //toggle front hb power
           digitalWrite(AUX1pin, HIGH);
-          delay(250);
+          delay(500);
           digitalWrite(AUX1pin, LOW);
         }
         if (Serial.read() == 'R') {
           //toggle rear hb power
           digitalWrite(AUX2pin, HIGH);
-          delay(250);
+          delay(500);
           digitalWrite(AUX2pin, LOW);
         }
       }
