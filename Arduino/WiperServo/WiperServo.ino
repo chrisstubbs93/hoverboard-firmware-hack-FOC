@@ -233,7 +233,7 @@ void loop() {
     //in neutral
     if (AccelPedalVal.get() - PedalCentre < -300){
       //holding foot brake
-      if (digitalRead(manualBraking)){
+      if (manualBraking){
         //holding hand brake
         digitalWrite(AUX1pin, HIGH);
         delay(2000);
