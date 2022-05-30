@@ -235,9 +235,9 @@ void loop() {
       //holding foot brake
       int tempshiz = analogRead(BrakeHallPin);
       Serial.print("Temp shiz ");
-      Serial.println(tempshiz)
+      Serial.println(tempshiz);
       if (tempshiz > 200){
-        Serial.println("brake on")
+        Serial.println("brake on");
         //holding hand brake
         digitalWrite(AUX1pin, HIGH);
         delay(2000);
@@ -246,10 +246,13 @@ void loop() {
         digitalWrite(AUX2pin, HIGH);
         delay(2000);
         digitalWrite(AUX2pin, LOW);
-        while(analogRead(BrakeHallPin) > 200)
+        int whyamidoingthis = analogRead(BrakeHallPin);
+        while(whyamidoingthis > 200)
         {
           //wait until released
-          Serial.println("loopin")
+          whyamidoingthis = analogRead(BrakeHallPin);
+          Serial.print("loopin ");
+          Serial.println(whyamidoingthis);
         }
       }
       
