@@ -233,7 +233,8 @@ void loop() {
     //in neutral
     if (AccelPedalVal.get() - PedalCentre < -300){
       //holding foot brake
-      if (manualBraking){
+      if (analogRead(BrakeHallPin) > 200){
+        Serial.println("brake on")
         //holding hand brake
         digitalWrite(AUX1pin, HIGH);
         delay(2000);
@@ -245,6 +246,7 @@ void loop() {
         while(analogRead(BrakeHallPin) > 200)
         {
           //wait until released
+          Serial.println("loopin")
         }
       }
       
