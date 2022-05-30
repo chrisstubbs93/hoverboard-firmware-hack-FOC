@@ -271,14 +271,12 @@ void loop() {
           if (posraw > 8000) {
             if (posraw == 8888) {
               //toggle front hb power
-              Serial.println("Got F");
               digitalWrite(AUX1pin, HIGH);
               delay(500);
               digitalWrite(AUX1pin, LOW);
             }
             if (posraw == 9999) {
               //toggle rear hb power
-              Serial.println("Got R");
               digitalWrite(AUX2pin, HIGH);
               delay(500);
               digitalWrite(AUX2pin, LOW);
