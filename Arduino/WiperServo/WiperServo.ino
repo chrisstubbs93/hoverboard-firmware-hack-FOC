@@ -62,6 +62,7 @@ bool lockout = false;
 Smoothed <int> SteeringWheelVal;
 Smoothed <int> SteeringFeedbackVal;
 Smoothed <int> AccelPedalVal;
+Smoothed <int> ManualBrakeVal;
 bool manualBraking;
 bool currentLimiting;
 int brkcmd;
@@ -127,6 +128,7 @@ void setup() {
   SteeringWheelVal.begin(SMOOTHED_AVERAGE, 10);
   SteeringFeedbackVal.begin(SMOOTHED_AVERAGE, 10);
   AccelPedalVal.begin(SMOOTHED_AVERAGE, 10);
+  ManualBrakeVal.begin(SMOOTHED_AVERAGE, 10);
 
   setPwmFrequency(LPWMpin, 1); //62500hz?
   setPwmFrequency(RPWMpin, 1); //62500hz?
@@ -233,26 +235,21 @@ void loop() {
     //in neutral
     if (AccelPedalVal.get() - PedalCentre < -300){
       //holding foot brake
-      int tempshiz = analogRead(BrakeHallPin);
-      Serial.print("Temp shiz ");
-      Serial.println(tempshiz);
-      if (tempshiz > 200){
+      if (ManualBrakeVal.get() > 250){
         Serial.println("brake on");
         //holding hand brake
         digitalWrite(AUX1pin, HIGH);
-        delay(2000);
+        delay(1000);
         digitalWrite(AUX1pin, LOW);
-        delay(2000); //delay between front and back
+        delay(1000); //delay between front and back
         digitalWrite(AUX2pin, HIGH);
-        delay(2000);
+        delay(1000);
         digitalWrite(AUX2pin, LOW);
-        int whyamidoingthis = analogRead(BrakeHallPin);
-        while(whyamidoingthis > 200)
+        while(ManualBrakeVal.get() > 250)
         {
           //wait until released
-          whyamidoingthis = analogRead(BrakeHallPin);
+          ManualBrakeVal.add(analogRead(BrakeHallPin));
           Serial.print("loopin ");
-          Serial.println(whyamidoingthis);
         }
       }
       
@@ -264,6 +261,7 @@ void loop() {
   SteeringWheelVal.add(analogRead(SteeringWheelPin));
   SteeringFeedbackVal.add(analogRead(SteeringFeedbackPin) + SteerCentreOffset);
   AccelPedalVal.add(analogRead(LeftPedalPin));
+  ManualBrakeVal.add(analogRead(BrakeHallPin));
 
   if (currentMillisA - previousMillisA >= interval) { // check if inteval passed
     previousMillisA = currentMillisA;   // save the last time you blinked the LED
@@ -296,7 +294,7 @@ void loop() {
     //Serial.print(" Pedal_avg:");
     //Serial.println(AccelPedalVal.get() - PedalCentre);
 
-    if (analogRead(BrakeHallPin) > 200) {
+    if (analogRead(BrakeHallPin) > 250) {
       //Serial.println("Brake On");
       manualBraking = true;
       drvcmd = 0;
