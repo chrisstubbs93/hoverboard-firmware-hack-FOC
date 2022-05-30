@@ -268,17 +268,24 @@ void loop() {
       while (Serial.available() > 0) {
         int posraw = Serial.parseInt();
         int nextchar = Serial.read();
+
+        Serial.print("Got this: ");
+        Serial.write(nextchar);
+        Serial.println(". Are you happy?");
+        
         if (nextchar == '\n') {
           pos = constrain(posraw, -100, 100);
         }
         if (nextchar == 'F') {
           //toggle front hb power
+          Serial.println("Got F");
           digitalWrite(AUX1pin, HIGH);
           delay(500);
           digitalWrite(AUX1pin, LOW);
         }
         if (nextchar == 'R') {
           //toggle rear hb power
+          Serial.println("Got R");
           digitalWrite(AUX2pin, HIGH);
           delay(500);
           digitalWrite(AUX2pin, LOW);
