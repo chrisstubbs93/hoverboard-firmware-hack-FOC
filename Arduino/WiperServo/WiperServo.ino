@@ -242,7 +242,10 @@ void loop() {
         digitalWrite(AUX2pin, HIGH);
         delay(2000);
         digitalWrite(AUX2pin, LOW);
-        delay(5000); //delay for driver to release pedals
+        while(analogRead(BrakeHallPin) > 200)
+        {
+          //wait until released
+        }
       }
       
     }
