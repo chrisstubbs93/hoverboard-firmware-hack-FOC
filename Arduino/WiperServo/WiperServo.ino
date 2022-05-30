@@ -276,7 +276,7 @@ void loop() {
               delay(500);
               digitalWrite(AUX1pin, LOW);
             }
-            if (posraw > 9999) {
+            if (posraw == 9999) {
               //toggle rear hb power
               Serial.println("Got R");
               digitalWrite(AUX2pin, HIGH);
