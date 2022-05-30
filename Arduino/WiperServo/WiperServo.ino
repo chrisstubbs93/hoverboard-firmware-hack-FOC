@@ -267,16 +267,17 @@ void loop() {
     if (digitalRead(LocRemSwPin)) { //remote mode
       while (Serial.available() > 0) {
         int posraw = Serial.parseInt();
-        if (Serial.read() == '\n') {
+        int nextchar = Serial.read();
+        if (nextchar == '\n') {
           pos = constrain(posraw, -100, 100);
         }
-        if (Serial.read() == 'F') {
+        if (nextchar == 'F') {
           //toggle front hb power
           digitalWrite(AUX1pin, HIGH);
           delay(500);
           digitalWrite(AUX1pin, LOW);
         }
-        if (Serial.read() == 'R') {
+        if (nextchar == 'R') {
           //toggle rear hb power
           digitalWrite(AUX2pin, HIGH);
           delay(500);
