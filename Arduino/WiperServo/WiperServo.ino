@@ -130,6 +130,14 @@ void setup() {
   AccelPedalVal.begin(SMOOTHED_AVERAGE, 10);
   ManualBrakeVal.begin(SMOOTHED_AVERAGE, 10);
 
+  //before doing anything, feed the analog smoothing
+  for (int i = 0; i < 10; i ++) {
+    SteeringWheelVal.add(analogRead(SteeringWheelPin));
+    SteeringFeedbackVal.add(analogRead(SteeringFeedbackPin) + SteerCentreOffset);
+    AccelPedalVal.add(analogRead(LeftPedalPin));
+    ManualBrakeVal.add(analogRead(BrakeHallPin));
+  }
+
   setPwmFrequency(LPWMpin, 1); //62500hz?
   setPwmFrequency(RPWMpin, 1); //62500hz?
   Serial.begin(115200); //hardware serial to pi
