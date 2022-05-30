@@ -21,9 +21,9 @@
 #define MotorEnPin 11
 #define LPWMpin 10
 #define RPWMpin 9
-#define AUX1pin 3 //FET 12V OP only
-#define AUX2pin 2 //FET 12V OP only
-#define AUX3pin 4 //input only with 10k pulldown
+#define AUX1pin 3 //FET 12V OP only //front HB power control
+#define AUX2pin 2 //FET 12V OP only //Rear HB power control
+#define AUX3pin 4 //input only with 10k pulldown //used for soft serial
 
 #define HOVER_SERIAL_BAUD   115200      // [-] Baud rate for HoverSerial (used to communicate with the hoverboard)
 #define START_FRAME         0xABCD       // [-] Start frme definition for reliable serial communication
@@ -228,6 +228,26 @@ void wiperServo(int sp) {
 void loop() {
   unsigned long currentMillisA = millis(); // store the current time
 
+
+  if (!digitalRead(DriveSwPin) && !digitalRead(RevSwPin)){
+    //in neutral
+    if (AccelPedalVal.get() - PedalCentre < -300){
+      //holding foot brake
+      if (digitalRead(manualBraking)){
+        //holding hand brake
+        digitalWrite(AUX1pin, HIGH);
+        delay(250);
+        digitalWrite(AUX1pin, LOW);
+        delay(2000); //delay between front and back
+        digitalWrite(AUX2pin, HIGH);
+        delay(250);
+        digitalWrite(AUX2pin, LOW);
+      }
+      
+    }
+  }
+  
+
   //read all analogue in to smoothing function
   SteeringWheelVal.add(analogRead(SteeringWheelPin));
   SteeringFeedbackVal.add(analogRead(SteeringFeedbackPin) + SteerCentreOffset);
@@ -241,6 +261,18 @@ void loop() {
         int posraw = Serial.parseInt();
         if (Serial.read() == '\n') {
           pos = constrain(posraw, -100, 100);
+        }
+        if (Serial.read() == 'F') {
+          //toggle front hb power
+          digitalWrite(AUX1pin, HIGH);
+          delay(250);
+          digitalWrite(AUX1pin, LOW);
+        }
+        if (Serial.read() == 'R') {
+          //toggle rear hb power
+          digitalWrite(AUX2pin, HIGH);
+          delay(250);
+          digitalWrite(AUX2pin, LOW);
         }
       }
     } else { //local mode
