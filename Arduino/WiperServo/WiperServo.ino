@@ -230,12 +230,12 @@ void wiperServo(int sp) {
 void loop() {
   unsigned long currentMillisA = millis(); // store the current time
 
-//manual power up routine for hoverboards
-  if (!digitalRead(DriveSwPin) && !digitalRead(RevSwPin)){
+  //manual power up routine for hoverboards
+  if (!digitalRead(DriveSwPin) && !digitalRead(RevSwPin)) {
     //in neutral
-    if (AccelPedalVal.get() - PedalCentre < -300){
+    if (AccelPedalVal.get() - PedalCentre < -300) {
       //holding foot brake
-      if (ManualBrakeVal.get() > 250){
+      if (ManualBrakeVal.get() > 250) {
         //holding hand brake
         digitalWrite(AUX1pin, HIGH);
         delay(500);
@@ -244,16 +244,16 @@ void loop() {
         digitalWrite(AUX2pin, HIGH);
         delay(500);
         digitalWrite(AUX2pin, LOW);
-        while(ManualBrakeVal.get() > 250)
+        while (ManualBrakeVal.get() > 250)
         {
           //wait until released
           ManualBrakeVal.add(analogRead(BrakeHallPin));
         }
       }
-      
+
     }
   }
-  
+
 
   //read all analogue in to smoothing function
   SteeringWheelVal.add(analogRead(SteeringWheelPin));
@@ -267,28 +267,25 @@ void loop() {
     if (digitalRead(LocRemSwPin)) { //remote mode
       while (Serial.available() > 0) {
         int posraw = Serial.parseInt();
-        int nextchar = Serial.read();
-
-        Serial.print("Got this: ");
-        Serial.write(nextchar);
-        Serial.println(". Are you happy?");
-        
-        if (nextchar == '\n') {
-          pos = constrain(posraw, -100, 100);
-        }
-        if (nextchar == 'F') {
-          //toggle front hb power
-          Serial.println("Got F");
-          digitalWrite(AUX1pin, HIGH);
-          delay(500);
-          digitalWrite(AUX1pin, LOW);
-        }
-        if (nextchar == 'R') {
-          //toggle rear hb power
-          Serial.println("Got R");
-          digitalWrite(AUX2pin, HIGH);
-          delay(500);
-          digitalWrite(AUX2pin, LOW);
+        if (Serial.read() == '\n') {
+          if (posraw > 8000) {
+            if (posraw == 8888) {
+              //toggle front hb power
+              Serial.println("Got F");
+              digitalWrite(AUX1pin, HIGH);
+              delay(500);
+              digitalWrite(AUX1pin, LOW);
+            }
+            if (posraw > 9999) {
+              //toggle rear hb power
+              Serial.println("Got R");
+              digitalWrite(AUX2pin, HIGH);
+              delay(500);
+              digitalWrite(AUX2pin, LOW);
+            }
+          } else {
+            pos = constrain(posraw, -100, 100);
+          }
         }
       }
     } else { //local mode
@@ -354,7 +351,7 @@ void steeringtelem() {
 
   //structure: $STEER,INPUT,GEAR,MANUALBRAKE,PEDALAVG,STEERSP,STEERIP,STEEROP,CURRENTIP,CURRENTOP,CURRENTLIMITING,LOCKOUT,SENTSPEED,SENTBRAKE*AA
   // $STEER,0,D,0,-9,-63,0,0,0.67,0,0,0,0,0*2E
-  
+
   char buf[64];
   sprintf(buf, "$STEER");
 
