@@ -233,7 +233,10 @@ void loop() {
     //in neutral
     if (AccelPedalVal.get() - PedalCentre < -300){
       //holding foot brake
-      if (analogRead(BrakeHallPin) > 200){
+      int tempshiz = analogRead(BrakeHallPin);
+      Serial.print("Temp shiz ");
+      Serial.println(tempshiz)
+      if (tempshiz > 200){
         Serial.println("brake on")
         //holding hand brake
         digitalWrite(AUX1pin, HIGH);
