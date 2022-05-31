@@ -319,9 +319,9 @@ void loop() {
       }
       else { //no steering faults
         if (AccelPedalVal.get() - PedalCentre > pedaldeadband) {
-          drvcmd = map(AccelPedalVal.get() - PedalCentre, pedaldeadband, (1023 - PedalCentre), 0, 1000);
+          drvcmd = map(AccelPedalVal.get() - PedalCentre, pedaldeadband, (1023 - PedalCentre), 0, 1200);
           brkcmd = 0;
-          //hoverbaord firmware input range is -1000 to 1000
+          //hoverboard firmware input range is -1000 to 1000 (or 1200 lol)
           if (digitalRead(DriveSwPin)) {
             Send(0, drvcmd, brkcmd, currentDriveMode);
           } else if (digitalRead(RevSwPin)) {
