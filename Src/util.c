@@ -313,7 +313,7 @@ void Input_Init(void) {
     HAL_FLASH_Unlock();
     EE_Init();            /* EEPROM Init */
     EE_ReadVariable(VirtAddVarTab[0], &writeCheck);
-    if (writeCheck == FLASH_WRITE_KEY) {
+    if (false) {
       EE_ReadVariable(VirtAddVarTab[1] , &readVal); rtP_Left.i_max = rtP_Right.i_max = (int16_t)readVal;
       EE_ReadVariable(VirtAddVarTab[2] , &readVal); rtP_Left.n_max = rtP_Right.n_max = (int16_t)readVal;
       for (uint8_t i=0; i<INPUTS_NR; i++) {
