@@ -29,7 +29,7 @@
 #define START_FRAME         0xABCD       // [-] Start frme definition for reliable serial communication
 
 #include <SoftwareSerial.h>
-SoftwareSerial HoverSerial(2, 4);       // RX, TX
+SoftwareSerial HoverSerial(12, 4);       // RX, TX
 
 // Global variables for hoverboard
 uint8_t idx = 0;                        // Index for new data pointer
