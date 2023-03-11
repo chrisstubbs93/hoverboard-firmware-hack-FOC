@@ -11,8 +11,10 @@ make
 ```
 
 OR Use VScode
+```
 Install "makefile tools" plugin by Microsoft
 In powershell "choco install make"
+```
 Build via makefile tools plugin on LHS of VScode
 
 
