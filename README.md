@@ -9,8 +9,14 @@ Use linux (ubuntu) subsystem for windows
 cd /mnt/c/Users/Chris/Documents/GitHub/hoverboard-firmware-hack-FOC
 make
 ```
-flash .bin with ST-LINK
 
+OR Use VScode
+Install "makefile tools" plugin by Microsoft
+In powershell "choco install make"
+Build via makefile tools plugin on LHS of VScode
+
+
+flash .bin with ST-LINK while holding HB power button
 
 # General roamer notes:
 Input range ovser serial is -1000 to 1000
