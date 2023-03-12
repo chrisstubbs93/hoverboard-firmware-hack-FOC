@@ -716,7 +716,7 @@ void electricBrake(uint16_t speedBlend, uint8_t reverseDir) {
  * Input: speedBlend = fixdt(0,16,15), reverseDir = {0, 1}, brakeAmount (0-500)
  * Output: input2.cmd (Throtle) with brake component included
  */
-void electricBrakePedal(uint16_t speedBlend, uint8_t reverseDir, uint8_t brakeAmount) {
+void electricBrakePedal(uint16_t speedBlend, uint8_t reverseDir, uint16_t brakeAmount) {
   #if (CTRL_TYP_SEL == FOC_CTRL)
   if(dynamicDrivingMode == TRQ_MODE) 
   {
