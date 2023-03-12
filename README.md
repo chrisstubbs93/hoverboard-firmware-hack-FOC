@@ -24,14 +24,15 @@ flash .bin with ST-LINK while holding HB power button
 Input range ovser serial is -1000 to 1000
 Set up front hoverboard with 
 ```
-#define I_MOT_MAX       5
-#define I_DC_MAX        7
+#define I_MOT_MAX       8
+#define I_DC_MAX        10
 ```
 Set up rear hoverboard with 
 ```
-#define I_MOT_MAX       23
-#define I_DC_MAX        25
+#define I_MOT_MAX       25
+#define I_DC_MAX        27
 ```
+A little spin on the garage floor. Probably a good balance for road/grass.
 
 ```
 #define INVERT_R_DIRECTION and #define INVERT_L_DIRECTION because I put all the motors on backwards lol
