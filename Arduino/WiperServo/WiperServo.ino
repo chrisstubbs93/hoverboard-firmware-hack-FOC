@@ -307,15 +307,16 @@ void loop() {
       //Serial.println("Brake On");
       manualBraking = true;
       drvcmd = 0;
-      brkcmd = 0;
-      Send(0, drvcmd, brkcmd, currentDriveMode); //stop if manual braking
+      brkcmd = 1000;
+      Send(0, drvcmd, brkcmd, currentDriveMode); //also regenbrake if manual braking
     } else { //brake is not on
       manualBraking = false;
       //TODO: and check if in local mode
       if (lockout) {
-        drvcmd = 0;
-        brkcmd = 0;
-        Send(0, drvcmd, brkcmd, currentDriveMode); //stop if steering fault
+        //ignore for now
+        //drvcmd = 0;
+        //brkcmd = 0;
+        //Send(0, drvcmd, brkcmd, currentDriveMode); //stop if steering fault
       }
       else { //no steering faults
         if (AccelPedalVal.get() - PedalCentre > pedaldeadband) {
