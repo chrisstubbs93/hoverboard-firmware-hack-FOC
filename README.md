@@ -14,6 +14,7 @@ OR Use VScode
 ```
 Install "makefile tools" plugin by Microsoft
 In powershell "choco install make"
+Install Arm GNU Toolchain "Windows (mingw-w64-i686) hosted cross toolchains AArch32 bare-metal target (arm-none-eabi)" whatever that means.
 ```
 Build via makefile tools plugin on LHS of VScode
 
