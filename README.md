@@ -35,6 +35,10 @@ Set up rear hoverboard with
 ```
 A little spin on the garage floor. Probably a good balance for road/grass.
 
+Raced Scrumpy cup 23/25 rear, 8/10 front (i think). No fuse pops but did burn out rear motor and controller.
+
+Propose shifting power forward and increasing overall a little. 21/24 rear, 15/17 front
+
 ```
 #define INVERT_R_DIRECTION and #define INVERT_L_DIRECTION because I put all the motors on backwards lol
 ```
