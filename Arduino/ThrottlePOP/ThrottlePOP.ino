@@ -76,12 +76,20 @@ double Dk1 = 0;
 double Setpoint1, Input1, Output1;
 PID PID1(&Input1, &Output1, &Setpoint1, Pk1, Ik1 , Dk1, DIRECT);
 
-// PID current limit
+// PID steering current limit
 double Pk2 = 0;  //I lim
 double Ik2 = 15;
 double Dk2 = 0;
 double Input2, Output2;
 PID PID2(&Input2, &Output2, &ilim, Pk2, Ik2 , Dk2, DIRECT);
+
+// PID fuse voltage control limit
+double Pk3 = 3;  //I lim
+double Ik3 = 10;
+double Dk3 = 0;
+double Input3Fuse, Output3Throttle;
+double FuseIlim = 1100; //in very nonlinear units about 0.1A //Determined experimentally by measuring runaway point as fuse blows
+PID FusePID(&Input3Fuse, &Output3Throttle, &FuseIlim, Pk3, Ik3 , Dk3, DIRECT);
 
 double pwm;
 volatile boolean done;
@@ -154,6 +162,10 @@ void setup() {
   PID2.SetOutputLimits(-255, 255);
   PID2.SetSampleTime(20);
 
+  FusePID.SetMode(AUTOMATIC);              // PID constant current loop
+  FusePID.SetOutputLimits(0, 1200);
+  FusePID.SetSampleTime(20);
+
   digitalWrite(MotorEnPin, HIGH);
 }
 
@@ -171,7 +183,7 @@ void Send(int16_t uSteer, int16_t uSpeed, int16_t brake, int16_t driveMode)
   HoverSerial.write((uint8_t *) &Command, sizeof(Command));
 }
 
-void wiperServo(int sp) {
+void wiperServo(int sp) { //disabled
   Setpoint1 = constrain(map(sp, -100, 100, 0 - poslimit, poslimit), 0 - poslimit, poslimit);
   pot = SteeringFeedbackVal.get();//analogRead(SteeringFeedbackPin) + SteerCentreOffset;
   //Serial.print(" pos_sp:");
@@ -239,6 +251,38 @@ void wiperServo(int sp) {
   }
 }
 
+
+int ThrottleFuseControl(int throttleSP) {
+  //remember to bypass this for braking! -ve throttle
+  // if (AccelPedalVal.get() - PedalCentre > pedaldeadband) {
+  //   //Accelerate
+  // } else if (AccelPedalVal.get() - PedalCentre < (0 - pedaldeadband)) {
+  //   //brake
+  // } else {
+  //   drvcmd = 0;
+  //   brkcmd = 0;
+  //   Send(0, drvcmd, brkcmd, currentDriveMode); //stop if no pedal input
+  // }
+
+  Input3Fuse = (SteeringFeedbackVal.get()*10)/2; //SteeringFeedbackVal = FuseADC (scaled to almost 0.1 amps nonlinear)
+  FusePID.Compute();
+
+  //TODO datalog loop inputs, outputs, modes. Do tuning
+
+  //take minimum loop output
+  if (abs(throttleSP) <= abs(Output3Throttle)) {
+    //throttle mode
+    //currentLimiting = false;
+    return throttleSP;
+  }
+  else {
+    //i lim mode
+    //currentLimiting = true;
+    return Output3Throttle;
+  }
+}
+
+
 void loop() {
   unsigned long currentMillisA = millis(); // store the current time
 
@@ -304,18 +348,18 @@ void loop() {
       //local mode
       pos = constrain(map(SteeringWheelVal.get(), 0, 1024, -100, 100), -100, 100);
     }
-    wiperServo(pos);              // tell servo to go to position in variable 'pos'
-    //Serial.print(" Pedal_raw:");
-    //Serial.print(AccelPedalVal.getLast());
-    //Serial.print(" Pedal_avg:");
-    //Serial.println(AccelPedalVal.get() - PedalCentre);
 
+    //wiperServo(pos);              // tell servo to go to position in variable 'pos'
+
+    //ThrottleFuseControl(); //calculate optimum throttle output based on throttle pedal position and voltage across fuse (to prevent it blowing)
+
+    //Handle braking
     if (analogRead(BrakeHallPin) > 250) {
       //Serial.println("Brake On");
       manualBraking = true;
       drvcmd = 0;
       brkcmd = 1000;
-      Send(0, drvcmd, brkcmd, currentDriveMode); //also regenbrake if manual braking
+      Send(0, drvcmd, brkcmd, currentDriveMode); //also regenbrake if manual braking //TDOD test this works?
     } else { //brake is not on
       manualBraking = false;
       //TODO: and check if in local mode
@@ -331,7 +375,9 @@ void loop() {
           brkcmd = 0;
           //hoverboard firmware input range is -1000 to 1000 (or 1200 lol)
           if (digitalRead(DriveSwPin)) {
-            Send(0, drvcmd, brkcmd, currentDriveMode);
+            //Send(0, drvcmd, brkcmd, currentDriveMode); //non PID mode disabled
+            //only do PID throttle/fuse control in forward drive when not braking for safety
+            Send(0, ThrottleFuseControl(drvcmd), brkcmd, currentDriveMode);
           } else if (digitalRead(RevSwPin)) {
             drvcmd = -drvcmd * revspd;
             Send(0, drvcmd, brkcmd, currentDriveMode);
@@ -345,8 +391,6 @@ void loop() {
           brkcmd = map(PedalCentre - AccelPedalVal.get(), pedaldeadband, (PedalCentre), 0, 1000); //500 = full brake
           drvcmd = 0;
           Send(0, drvcmd, brkcmd, currentDriveMode);
-          //Serial.print("sentbrake: ");
-          //Serial.println(brkcmd);
         }
         else {
           drvcmd = 0;
@@ -362,8 +406,7 @@ void loop() {
 }
 
 void steeringtelem() {
-
-  //structure: $STEER,INPUT,GEAR,MANUALBRAKE,PEDALAVG,STEERSP,STEERIP,STEEROP,CURRENTIP,CURRENTOP,CURRENTLIMITING,LOCKOUT,SENTSPEED,SENTBRAKE*AA
+  //structure: $STEER,INPUT,GEAR,MANUALBRAKE,PEDALAVG,STEERSP,STEERIP,STEEROP,CURRENTIP,CURRENTOP,CURRENTLIMITING,LOCKOUT,SENTSPEED,SENTBRAKE*AA //out of date
   // $STEER,0,D,0,-9,-63,0,0,0.67,0,0,0,0,0*2E
 
   char buf[64];
