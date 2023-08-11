@@ -66,6 +66,7 @@ Smoothed <int> ManualBrakeVal;
 Smoothed <int> ShuntADC;
 bool manualBraking;
 bool currentLimiting;
+bool fusecurrentLimiting;
 int brkcmd;
 int drvcmd;
 
@@ -272,12 +273,12 @@ int ThrottleFuseControl(int throttleSP) {
   //take minimum loop output
   if (abs(throttleSP) <= abs(Output3Throttle)) {
     //throttle mode
-    //currentLimiting = false;
+    fusecurrentLimiting = false;
     return throttleSP;
   }
   else {
     //i lim mode
-    //currentLimiting = true;
+    fusecurrentLimiting = true;
     return Output3Throttle;
   }
 }
@@ -406,7 +407,7 @@ void loop() {
 }
 
 void steeringtelem() {
-  //structure: $STEER,INPUT,GEAR,MANUALBRAKE,PEDALAVG,STEERSP,STEERIP,STEEROP,CURRENTIP,CURRENTOP,CURRENTLIMITING,LOCKOUT,SENTSPEED,SENTBRAKE*AA //out of date
+  //structure: $STEER,INPUT,GEAR,MANUALBRAKE,PEDALAVG,FUSEADC,THROTTLEIP,THROTTLEOP,SHUNTADC,CURRENTOP(not used),CURRENTLIMITING,LOCKOUT,SENTSPEED,SENTBRAKE*AA //out of date
   // $STEER,0,D,0,-9,-63,0,0,0.67,0,0,0,0,0*2E
 
   char buf[64];
@@ -433,11 +434,11 @@ void steeringtelem() {
   //steersp -100 (right) to 100 (left) //Now fuseADC in adc counts
   sprintf(buf, "%s,%d", buf, (SteeringFeedbackVal.get()*10)/2); //was pos
 
-  //steerip (feedback)
-  sprintf(buf, "%s,%d", buf, Input1);
+  //steerip (feedback) //now throttleip
+  sprintf(buf, "%s,%d", buf, Input3Fuse);
 
-  //steerop (loop output)
-  sprintf(buf, "%s,%d", buf, Output1);
+  //steerop (loop output) //now throttleop
+  sprintf(buf, "%s,%d", buf, Output3Throttle);
 
   //currentip (0.1 amps) (note this is decimal to 2dp) //Now ShuntADC in adc counts
   //char str_currentip[6];
@@ -445,13 +446,13 @@ void steeringtelem() {
   //sprintf(buf, "%s,%s", buf, str_currentip);
   sprintf(buf, "%s,%d", buf, (ShuntADC.get()*10)/6); //was Input2
 
-  //currentop (loop output)
+  //currentop (loop output) (NOT USED)
   sprintf(buf, "%s,%d", buf, Output2);
 
-  //currentlimiting 0/1 1 is limiting
-  sprintf(buf, "%s,%d", buf, currentLimiting);
+  //currentlimiting 0/1 1 is limiting (fuse current limiting)
+  sprintf(buf, "%s,%d", buf, fusecurrentLimiting);
 
-  //lockout 0/1 1 is locked out
+  //lockout 0/1 1 is locked out //not used
   sprintf(buf, "%s,%d", buf, lockout);
 
   //sentspeed (0-1000)
