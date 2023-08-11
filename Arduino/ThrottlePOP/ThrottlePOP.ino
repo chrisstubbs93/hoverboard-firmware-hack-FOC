@@ -85,11 +85,11 @@ double Input2, Output2;
 PID PID2(&Input2, &Output2, &ilim, Pk2, Ik2 , Dk2, DIRECT);
 
 // PID fuse voltage control limit
-double Pk3 = 3;  //I lim
-double Ik3 = 10;
+double Pk3 = 0;  //I lim
+double Ik3 = 5;
 double Dk3 = 0;
 double Input3Fuse, Output3Throttle;
-double FuseIlim = 1100; //in very nonlinear units about 0.1A //Determined experimentally by measuring runaway point as fuse blows
+double FuseIlim = 850; //  in very nonlinear units about 0.1A //Determined experimentally by measuring runaway point as fuse blows
 PID FusePID(&Input3Fuse, &Output3Throttle, &FuseIlim, Pk3, Ik3 , Dk3, DIRECT);
 
 double pwm;
@@ -267,6 +267,10 @@ int ThrottleFuseControl(int throttleSP) {
 
   Input3Fuse = (SteeringFeedbackVal.get()*10)/2; //SteeringFeedbackVal = FuseADC (scaled to almost 0.1 amps nonlinear)
   FusePID.Compute();
+  // Serial.print("PID fed with ");
+  // Serial.println(Input3Fuse);
+  // Serial.print("PID OP ");
+  // Serial.println(Output3Throttle);
 
   //TODO datalog loop inputs, outputs, modes. Do tuning
 
@@ -407,8 +411,11 @@ void loop() {
 }
 
 void steeringtelem() {
-  //structure: $STEER,INPUT,GEAR,MANUALBRAKE,PEDALAVG,FUSEADC,THROTTLEIP,THROTTLEOP,SHUNTADC,CURRENTOP(not used),CURRENTLIMITING,LOCKOUT,SENTSPEED,SENTBRAKE*AA //out of date
-  // $STEER,0,D,0,-9,-63,0,0,0.67,0,0,0,0,0*2E
+  //structure: $STEER,INPUT,GEAR,MANUALBRAKE,PEDALAVG,FUSEADC,
+  //THROTTLEIP,THROTTLEOP,SHUNTADC,CURRENTOP(not used),
+  //CURRENTLIMITING,LOCKOUT,SENTSPEED,SENTBRAKE*AA
+
+  // $STEER,0,D,0,-9,-63,0,0,0.67,0,0,0,0,0*2E out of date
 
   char buf[64];
   sprintf(buf, "$STEER");
@@ -435,10 +442,10 @@ void steeringtelem() {
   sprintf(buf, "%s,%d", buf, (SteeringFeedbackVal.get()*10)/2); //was pos
 
   //steerip (feedback) //now throttleip
-  sprintf(buf, "%s,%d", buf, Input3Fuse);
+  sprintf(buf, "%s,%d", buf, int(Input3Fuse));
 
   //steerop (loop output) //now throttleop
-  sprintf(buf, "%s,%d", buf, Output3Throttle);
+  sprintf(buf, "%s,%d", buf, int(Output3Throttle));
 
   //currentip (0.1 amps) (note this is decimal to 2dp) //Now ShuntADC in adc counts
   //char str_currentip[6];
