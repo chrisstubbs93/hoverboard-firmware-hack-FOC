@@ -42,7 +42,8 @@ popped fuse racing tarmac
 trying 20/22 rear, 13/15 front popped
 trying 19/21 , 11/13 front
 
-Try fuse modelling tests at 21/23 / 16/18
+Try fuse modelling tests at 21/23 / 16/18 (think this is the current cybrtrk config)
+Proposed 12/14, 12/14, 6/8 for volt-crane-o
 
 ```
 #define INVERT_R_DIRECTION and #define INVERT_L_DIRECTION because I put all the motors on backwards lol
