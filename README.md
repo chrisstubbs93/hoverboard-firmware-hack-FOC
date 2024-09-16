@@ -42,8 +42,17 @@ popped fuse racing tarmac
 trying 20/22 rear, 13/15 front popped
 trying 19/21 , 11/13 front
 
+Did pop a couple of fuses at makers 24
+
 Try fuse modelling tests at 21/23 / 16/18 (think this is the current cybrtrk config)
-Proposed 12/14, 12/14, 6/8 for volt-crane-o
+Proposed 12/14, 12/14, 6/8 for volt-crane-o. no pops at emf
+going for 15/17 on both rears. Did eventually pop on long hill.
+
+
+Fuse popped on cybertruck at footfest 24. dialing down to 19/21 on rear. Reducedd to 17/19. reduced to 15/17. Root cause likely arduino PID disabled!
+
+16/09/24 setting CYBRTRK up for 21/23 rear, 10/12 front. This should peak at 70A.
+
 
 ```
 #define INVERT_R_DIRECTION and #define INVERT_L_DIRECTION because I put all the motors on backwards lol
