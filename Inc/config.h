@@ -151,8 +151,8 @@
 #define DIAG_ENA        1               // [-] Motor Diagnostics enable flag: 0 = Disabled, 1 = Enabled (default)
 
 // Limitation settings
-#define I_MOT_MAX       21             // [A] Maximum single motor current limit
-#define I_DC_MAX        23              // [A] Maximum stage2 DC Link current limit for Commutation and Sinusoidal types (This is the final current protection. Above this value, current chopping is applied. To avoid this make sure that I_DC_MAX = I_MOT_MAX + 2A)
+#define I_MOT_MAX       10             // [A] Maximum single motor current limit //This is total link current for each side, not per phase. It should be controlled to this limit in the BLDC controller.
+#define I_DC_MAX        12              // [A] Maximum stage2 DC Link current limit for Commutation and Sinusoidal types (This is the final current protection. Above this value, current chopping is applied. To avoid this make sure that I_DC_MAX = I_MOT_MAX + 2A) //This is total link current for each side, not per phase. It will chop/disable(temporarily?) PWM outside of the BLDC controller if the BLDC controller for some reason does not catch it at the lower limit..
 #define N_MOT_MAX       1200            // [rpm] Maximum motor speed limit
 
 // Field Weakening / Phase Advance

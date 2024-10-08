@@ -53,6 +53,22 @@ Fuse popped on cybertruck at footfest 24. dialing down to 19/21 on rear. Reduced
 
 16/09/24 setting CYBRTRK up for 21/23 rear, 10/12 front. This should peak at 70A.
 
+Crane popped a couple of fuses at scrumpy 24 at (i think) 12/14, 12/14, 6/8. Current meter showed 30A exactly though? Reducing to 10/12 rears.
+Driving in to stall is ~13 amps on clamp meter, but full speed on track was 40a with same settings. Trying disabling field weakening, same. Trying 2x amps not 2+ amps, no difference.
+After getting home, with the same settings, almost 20A driving in to stall.
+
+
+CYBR TRK fuse monitoring seems to be working well at scrumpy (21/23 rear, 10/12 front)
+
+Fuse monitoring implemented on crane. Was set to target total peak of 70A to match cybrtrk anyway, but performance off the line was lacking?
+Use same front/rear settings as they seem punchy, but may lead to overshoot in arduino PID loop?. 
+Trying 21/23 rear(s), 10/12 front, FW ON. <- gives <50A!
+
+Current settings:
+CYBR TRK 21/23 rear, 10/12 front, FW ON
+CRANE 21/23 rear(s), 10/12 front, FW ON
+
+
 
 ```
 #define INVERT_R_DIRECTION and #define INVERT_L_DIRECTION because I put all the motors on backwards lol
