@@ -9,3 +9,4 @@ MDK-ARM/*.uvguix.*
 build/*
 !build/hover.hex
 !build/hover.bin
+!build/standard builds/*
